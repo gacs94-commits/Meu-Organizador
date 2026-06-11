@@ -364,3 +364,128 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   .filters{gap:3px}
   .fbtn{padding:4px 10px;font-size:11px}
 }
+
+/* ═══════ PROFILE BUTTON ═══════ */
+.profile-btn{
+  position:fixed;top:16px;right:20px;z-index:60;
+  display:flex;align-items:center;gap:9px;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:999px;padding:5px 14px 5px 5px;
+  cursor:pointer;box-shadow:var(--shadow-md);
+  transition:all .2s;user-select:none;
+}
+.profile-btn:hover{border-color:var(--accent);box-shadow:var(--glow),var(--shadow-md)}
+.profile-avatar{
+  width:34px;height:34px;border-radius:50%;
+  background:var(--accent-light);border:2px solid var(--accent);
+  overflow:hidden;display:flex;align-items:center;justify-content:center;
+  font-size:15px;font-weight:700;color:var(--accent);flex-shrink:0;
+}
+.profile-avatar img{width:100%;height:100%;object-fit:cover}
+.profile-name{font-size:13px;font-weight:600;color:var(--text);max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.profile-chevron{color:var(--text3);font-size:10px;margin-left:2px}
+
+/* ═══════ PROFILE PANEL ═══════ */
+.profile-panel{
+  position:fixed;top:68px;right:20px;z-index:59;
+  width:320px;background:var(--surface);
+  border:1px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow-md);overflow:hidden;
+  display:none;
+}
+.profile-panel.open{display:block}
+.pp-header{padding:20px 20px 16px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;align-items:center;gap:12px}
+.pp-avatar-wrap{position:relative;cursor:pointer}
+.pp-avatar-wrap:hover .pp-avatar-edit{opacity:1}
+.pp-avatar-big{
+  width:72px;height:72px;border-radius:50%;
+  background:var(--accent-light);border:3px solid var(--accent);
+  overflow:hidden;display:flex;align-items:center;justify-content:center;
+  font-size:28px;font-weight:700;color:var(--accent);
+}
+.pp-avatar-big img{width:100%;height:100%;object-fit:cover}
+.pp-avatar-edit{
+  position:absolute;bottom:0;right:0;width:24px;height:24px;
+  border-radius:50%;background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;opacity:0;transition:opacity .15s;pointer-events:none;
+}
+.pp-avatar-input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;border-radius:50%}
+.pp-name-input{
+  width:100%;padding:8px 12px;border:1px solid var(--border);
+  border-radius:var(--radius-sm);font-size:14px;font-weight:600;
+  font-family:inherit;background:var(--surface2);color:var(--text);
+  text-align:center;
+}
+.pp-name-input:focus{outline:none;border-color:var(--accent)}
+
+/* COLOR THEMES */
+.pp-section{padding:16px 20px;border-bottom:1px solid var(--border)}
+.pp-section:last-child{border-bottom:none}
+.pp-section-title{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px}
+.color-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:7px}
+.color-swatch{
+  width:100%;aspect-ratio:1;border-radius:50%;cursor:pointer;
+  border:3px solid transparent;transition:all .15s;position:relative;
+}
+.color-swatch.active{border-color:var(--text);transform:scale(1.15)}
+.color-swatch:hover{transform:scale(1.1)}
+.color-swatch .check{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:12px;font-weight:800;opacity:0;
+}
+.color-swatch.active .check{opacity:1}
+.bg-presets{display:flex;flex-direction:column;gap:6px}
+.bg-preset{
+  display:flex;align-items:center;gap:10px;padding:8px 12px;
+  border-radius:var(--radius-sm);border:1px solid var(--border);
+  cursor:pointer;transition:all .15s;background:var(--surface2);
+}
+.bg-preset:hover{border-color:var(--accent)}
+.bg-preset.active{border-color:var(--accent);background:var(--accent-light)}
+.bg-preset-preview{width:28px;height:28px;border-radius:6px;flex-shrink:0;border:1px solid var(--border2)}
+.bg-preset-label{font-size:13px;font-weight:500;color:var(--text)}
+.pp-save-btn{
+  width:100%;padding:10px;background:var(--accent);color:#fff;
+  border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:600;
+  cursor:pointer;transition:all .15s;font-family:inherit;
+}
+.pp-save-btn:hover{background:var(--accent2);box-shadow:var(--glow)}
+
+@media(max-width:700px){
+  .profile-btn{top:10px;right:10px;padding:4px 10px 4px 4px}
+  .profile-name{display:none}
+  .profile-panel{width:calc(100vw - 20px);right:10px}
+}
+
+/* ═══════ PDF IMPORT ═══════ */
+.pdf-drop-zone{
+  border:2px dashed var(--border2);border-radius:var(--radius);
+  padding:32px 20px;text-align:center;cursor:pointer;
+  transition:all .2s;background:var(--surface2);position:relative;
+}
+.pdf-drop-zone:hover,.pdf-drop-zone.drag-over{
+  border-color:var(--accent);background:var(--accent-light);
+}
+.pdf-drop-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.pdf-drop-zone svg{width:40px;height:40px;color:var(--text3);margin:0 auto 10px;display:block}
+.pdf-drop-zone p{font-size:14px;color:var(--text2)}
+.pdf-drop-zone small{font-size:12px;color:var(--text3)}
+.pdf-status{font-size:13px;color:var(--text2);margin:12px 0;min-height:20px;text-align:center}
+.pdf-preview-wrap{max-height:380px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:8px}
+.pdf-table{width:100%;border-collapse:collapse;font-size:13px}
+.pdf-table th{background:var(--surface2);padding:8px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.4px;border-bottom:1px solid var(--border);position:sticky;top:0}
+.pdf-table td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+.pdf-table tr:last-child td{border-bottom:none}
+.pdf-table tr:hover td{background:var(--surface2)}
+.pdf-table tr.row-disabled td{opacity:.4}
+.pdf-check{width:16px;height:16px;accent-color:var(--accent);cursor:pointer}
+.pdf-amount-pos{color:var(--green);font-weight:700}
+.pdf-amount-neg{color:var(--red);font-weight:700}
+.pdf-summary{display:flex;gap:16px;padding:10px 0;font-size:12px;color:var(--text2);flex-wrap:wrap}
+.pdf-summary span{display:flex;align-items:center;gap:5px}
+.pdf-import-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+.pdf-bank-badge{display:inline-flex;align-items:center;gap:6px;background:var(--accent-light);color:var(--accent);border:1px solid var(--accent-border);border-radius:999px;padding:3px 12px;font-size:12px;font-weight:600;margin-bottom:12px}
+
+/* IMPORTER TIP */
+.imp-tip{font-size:12px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:12px;line-height:1.5}

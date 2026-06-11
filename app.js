@@ -632,51 +632,129 @@ function delFinance(id) {
   D.fin=D.fin.filter(f=>f.id!==id); save('fin'); renderFinance(); toast('🗑️ Removido');
 }
 function renderFinance() {
-  const s=$('fin-search').value.toLowerCase();
-  let list = F.fin==='all'?[...D.fin]:D.fin.filter(f=>f.type===F.fin);
-  if(s) list=list.filter(f=>f.desc.toLowerCase().includes(s)||(f.cat||'').toLowerCase().includes(s));
+  const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const currentMonth = new Date().toISOString().slice(0,7);
+
+  // Populate month dropdown
+  const monthSel = $('fin-month');
+  if(monthSel) {
+    const months = [...new Set(D.fin.map(f=>(f.date||'').slice(0,7)).filter(Boolean))].sort().reverse();
+    // Always include current month even if no transactions yet
+    if(!months.includes(currentMonth)) months.unshift(currentMonth);
+    const prevVal = monthSel.value;
+    monthSel.innerHTML = '<option value="">📅 Todos os meses</option>' +
+      months.map(m => {
+        const [y,mo] = m.split('-');
+        const isNow  = m === currentMonth;
+        const label  = `${MONTHS_PT[parseInt(mo)-1]} ${y}${isNow?' (atual)':''}`;
+        return `<option value="${m}"${m===prevVal?' selected':''}>${label}</option>`;
+      }).join('');
+    // Default to current month on first render
+    if(!monthSel.dataset.inited) {
+      monthSel.value = currentMonth;
+      monthSel.dataset.inited = '1';
+    }
+  }
+
+  const selMonth = monthSel?.value || '';
+  const s = $('fin-search').value.toLowerCase();
+
+  // Apply filters
+  let list = [...D.fin];
+  if(selMonth)        list = list.filter(f=>(f.date||'').startsWith(selMonth));
+  if(F.fin !== 'all') list = list.filter(f=>f.type===F.fin);
+  if(s)               list = list.filter(f=>f.desc.toLowerCase().includes(s)||(f.cat||'').toLowerCase().includes(s));
   list.sort((a,b)=>b.date.localeCompare(a.date));
-  const st=$('fin-stats');
-  if(D.fin.length){
-    st.style.display='grid';
-    const entradas=D.fin.filter(f=>f.type==='entrada').reduce((a,f)=>a+f.val,0);
-    const saidas=D.fin.filter(f=>f.type==='saida').reduce((a,f)=>a+f.val,0);
-    const saldo=entradas-saidas;
-    $('fin-s1').textContent=fp(saldo);
-    $('fin-s1').style.color=saldo>=0?'var(--green)':'var(--red)';
-    $('fin-s2').textContent=fp(entradas);
-    $('fin-s3').textContent=fp(saidas);
-    $('fin-s4').textContent=D.fin.length;
+
+  // Stats reflect selected month (or all time)
+  const statBase = selMonth ? D.fin.filter(f=>(f.date||'').startsWith(selMonth)) : D.fin;
+  const st = $('fin-stats');
+  if(D.fin.length || selMonth) {
+    st.style.display = 'grid';
+    const entradas = statBase.filter(f=>f.type==='entrada').reduce((a,f)=>a+f.val,0);
+    const saidas   = statBase.filter(f=>f.type==='saida').reduce((a,f)=>a+f.val,0);
+    const saldo    = entradas - saidas;
+    $('fin-s1').textContent = fp(saldo);
+    $('fin-s1').style.color = saldo>=0?'var(--green)':'var(--red)';
+    $('fin-s2').textContent = fp(entradas);
+    $('fin-s3').textContent = fp(saidas);
+    $('fin-s4').textContent = statBase.length;
+    // Update stat labels to show which period
+    const periodLbl = selMonth
+      ? `${MONTHS_PT[parseInt(selMonth.split('-')[1])-1]} ${selMonth.split('-')[0]}`
+      : 'Todo período';
+    document.querySelectorAll('#fin-stats .stat-lbl').forEach((el,i) => {
+      const base = ['Saldo','Entradas','Saídas','Transações'][i];
+      el.textContent = `${base} · ${periodLbl}`;
+    });
   } else st.style.display='none';
-  $('fin-title').textContent=`Extrato (${D.fin.length})`;
-  // income insight
-  const now2 = new Date(); const ms = now2.toISOString().slice(0,7);
-  const mSpent = D.fin.filter(f=>f.type==='saida'&&(f.date||'').startsWith(ms)).reduce((a,f)=>a+f.val,0);
-  const mIn    = D.fin.filter(f=>f.type==='entrada'&&(f.date||'').startsWith(ms)).reduce((a,f)=>a+f.val,0);
+
+  // Title
+  const monthLabel = selMonth
+    ? ` — ${MONTHS_PT[parseInt(selMonth.split('-')[1])-1]} ${selMonth.split('-')[0]}`
+    : '';
+  $('fin-title').textContent = `Extrato${monthLabel} (${list.length})`;
+
+  // Sidebar income widget — always uses current month spending from extrato
+  const mSpent = D.fin.filter(f=>f.type==='saida'&&(f.date||'').startsWith(currentMonth)).reduce((a,f)=>a+f.val,0);
   let finInsight = '';
   if(income) {
-    const pct = pctOfIncome(mSpent);
+    const pct   = pctOfIncome(mSpent);
     const avail = income - mSpent;
     const color = pct>90?'var(--red)':pct>70?'var(--amber)':'inherit';
-    finInsight = incomeInsight(`Este mês: <strong>${fp(mSpent)}</strong> gasto (<strong style="color:${color}">${pct}% da renda</strong>) · <strong style="color:var(--green)">${fp(avail>=0?avail:0)}</strong> ainda disponível`);
+    finInsight  = incomeInsight(`Este mês: <strong>${fp(mSpent)}</strong> gasto (<strong style="color:${color}">${pct}% da renda</strong>) · <strong style="color:var(--green)">${fp(avail>=0?avail:0)}</strong> ainda disponível`);
   }
-  const fiEl = $('fin-insight'); if(fiEl) fiEl.innerHTML = finInsight;
+  const fiEl = $('fin-insight');
+  if(fiEl) fiEl.innerHTML = finInsight;
   else { const d=document.createElement('div');d.id='fin-insight';d.innerHTML=finInsight;$('fin-list').insertAdjacentElement('beforebegin',d); }
   renderIncomeWidget();
-  const el=$('fin-list');
-  if(!list.length){el.innerHTML=emptyHTML('Nenhuma transação registrada.');return;}
-  el.innerHTML=`<div class="items-list">${list.map(f=>`
-    <div class="fin-item">
-      <div class="fin-dot ${f.type}"></div>
-      <div style="flex:1;min-width:0">
-        <div class="item-name">${esc(f.desc)}</div>
-        <div class="item-meta">${[f.cat, f.date?new Date(f.date+'T00:00:00').toLocaleDateString('pt-BR'):''].filter(Boolean).join(' · ')}</div>
-      </div>
-      <div class="item-actions">
-        <span class="fin-amount ${f.type}">${f.type==='entrada'?'+':'−'}${fp(f.val)}</span>
-        ${iconBtn('','Remover',DEL_ICO,`delFinance(${f.id})`)}
-      </div>
-    </div>`).join('')}</div>`;
+
+  const el = $('fin-list');
+  if(!list.length) {
+    el.innerHTML = emptyHTML(selMonth
+      ? `Nenhuma transação em ${MONTHS_PT[parseInt(selMonth.split('-')[1])-1]} ${selMonth.split('-')[0]}.<br>Adicione uma transação ou escolha outro mês.`
+      : 'Nenhuma transação registrada.');
+    return;
+  }
+
+  // Group by day when viewing a specific month
+  if(selMonth) {
+    const groups = {};
+    list.forEach(f => { const d=f.date||'sem data'; if(!groups[d]) groups[d]=[]; groups[d].push(f); });
+    const days = Object.keys(groups).sort().reverse();
+    el.innerHTML = days.map(day => {
+      const txs      = groups[day];
+      const dayTotal = txs.reduce((a,f)=>a+(f.type==='entrada'?f.val:-f.val),0);
+      const dateLabel = day!=='sem data'
+        ? new Date(day+'T00:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'})
+        : 'Sem data';
+      return `<div style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 2px 6px;border-bottom:1px solid var(--border);margin-bottom:6px">
+          <span style="font-size:12px;font-weight:700;color:var(--text2);text-transform:capitalize">${dateLabel}</span>
+          <span style="font-size:12px;font-weight:700;color:${dayTotal>=0?'var(--green)':'var(--red)'}">
+            ${dayTotal>=0?'+':''}${fp(dayTotal)}
+          </span>
+        </div>
+        <div class="items-list">${txs.map(f=>finItemHTML(f)).join('')}</div>
+      </div>`;
+    }).join('');
+  } else {
+    el.innerHTML = `<div class="items-list">${list.map(f=>finItemHTML(f)).join('')}</div>`;
+  }
+}
+
+function finItemHTML(f) {
+  return `<div class="fin-item">
+    <div class="fin-dot ${f.type}"></div>
+    <div style="flex:1;min-width:0">
+      <div class="item-name">${esc(f.desc)}</div>
+      <div class="item-meta">${[f.cat, f.date?new Date(f.date+'T00:00:00').toLocaleDateString('pt-BR'):''].filter(Boolean).join(' · ')}</div>
+    </div>
+    <div class="item-actions">
+      <span class="fin-amount ${f.type}">${f.type==='entrada'?'+':'−'}${fp(f.val)}</span>
+      ${iconBtn('','Remover',DEL_ICO,`delFinance(${f.id})`)}
+    </div>
+  </div>`;
 }
 
 // ═══════ SHOPPING ═══════
@@ -1090,31 +1168,44 @@ function editIncome() {
 }
 
 function renderIncomeWidget() {
-  const amtEl = $('income-amt');
+  const amtEl   = $('income-amt');
   const barWrap = $('income-bar-wrap');
   if(!income) {
     amtEl.textContent = 'Definir renda...';
-    amtEl.className = 'income-amount empty';
+    amtEl.className   = 'income-amount empty';
     barWrap.style.display = 'none';
     return;
   }
   amtEl.textContent = fp(income);
-  amtEl.className = 'income-amount';
-  const now = new Date();
-  const monthStr = now.toISOString().slice(0,7);
-  const spent = D.fin.filter(f=>f.type==='saida'&&(f.date||'').startsWith(monthStr)).reduce((a,f)=>a+f.val,0);
-  const pct = Math.min(100, Math.round((spent/income)*100));
+  amtEl.className   = 'income-amount';
+
+  // Pull spending & income from extrato (D.fin) for current month
+  const MONTHS_PT = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const now       = new Date();
+  const monthStr  = now.toISOString().slice(0,7);
+  const monthLbl  = MONTHS_PT[now.getMonth()];
+  const spent     = D.fin.filter(f=>f.type==='saida'  &&(f.date||'').startsWith(monthStr)).reduce((a,f)=>a+f.val,0);
+  const earned    = D.fin.filter(f=>f.type==='entrada'&&(f.date||'').startsWith(monthStr)).reduce((a,f)=>a+f.val,0);
+  const pct   = Math.min(100, Math.round((spent/income)*100));
   const avail = income - spent;
+
   barWrap.style.display = 'block';
   const fill = $('income-bar-fill');
-  fill.style.width = pct+'%';
-  fill.style.background = pct>90 ? 'var(--red)' : pct>70 ? 'var(--amber)' : 'var(--accent)';
-  $('income-spent-lbl').textContent = fp(spent)+' gasto';
-  $('income-pct-lbl').textContent = pct+'%';
-  $('income-pct-lbl').style.color = pct>90?'var(--red)':pct>70?'var(--amber)':'var(--accent)';
+  fill.style.width      = pct+'%';
+  fill.style.background = pct>90?'var(--red)':pct>70?'var(--amber)':'var(--accent)';
+
+  $('income-spent-lbl').textContent = `${monthLbl}: ${fp(spent)} gasto`;
+  $('income-pct-lbl').textContent   = pct+'%';
+  $('income-pct-lbl').style.color   = pct>90?'var(--red)':pct>70?'var(--amber)':'var(--accent)';
+
   const availEl = $('income-avail');
-  availEl.textContent = avail>=0 ? '✓ '+fp(avail)+' disponível' : '⚠ Excedido em '+fp(Math.abs(avail));
-  availEl.style.color = avail>=0 ? 'var(--green)' : 'var(--red)';
+  if(avail >= 0) {
+    availEl.textContent = `✓ ${fp(avail)} disponível`;
+    availEl.style.color = 'var(--green)';
+  } else {
+    availEl.textContent = `⚠ Excedido em ${fp(Math.abs(avail))}`;
+    availEl.style.color = 'var(--red)';
+  }
 }
 
 function incomeInsight(html) {
@@ -1551,5 +1642,557 @@ $('fin-date').value = new Date().toISOString().slice(0,10);
 
 // ═══════ INIT ═══════
 renderIncomeWidget();
+renderFinance(); // render finance first (it's the default tab)
 renderWish(); renderCol(); renderMovies(); renderBooks();
-renderFinance(); renderShopping(); renderOthers(); renderGoals();
+renderShopping(); renderOthers(); renderGoals();
+
+// ═══════ PROFILE & THEME CUSTOMIZATION ═══════
+const ACCENT_COLORS = [
+  { name:'Roxo',   light:'#7c3aed', dark:'#a855f7', light2:'#a855f7', lightBg:'#f3eeff', lightBorder:'#d8b4fe', darkBg:'#1a0d2e', darkBorder:'#6b21a8' },
+  { name:'Azul',   light:'#2563eb', dark:'#60a5fa', light2:'#3b82f6', lightBg:'#eff6ff', lightBorder:'#bfdbfe', darkBg:'#0f172a', darkBorder:'#1e40af' },
+  { name:'Verde',  light:'#16a34a', dark:'#4ade80', light2:'#22c55e', lightBg:'#f0fdf4', lightBorder:'#bbf7d0', darkBg:'#052e16', darkBorder:'#166534' },
+  { name:'Rosa',   light:'#db2777', dark:'#f472b6', light2:'#ec4899', lightBg:'#fdf2f8', lightBorder:'#fbcfe8', darkBg:'#1f0a17', darkBorder:'#9d174d' },
+  { name:'Laranja',light:'#ea580c', dark:'#fb923c', light2:'#f97316', lightBg:'#fff7ed', lightBorder:'#fed7aa', darkBg:'#1c0a00', darkBorder:'#9a3412' },
+  { name:'Ciano',  light:'#0d9488', dark:'#2dd4bf', light2:'#14b8a6', lightBg:'#f0fdfa', lightBorder:'#99f6e4', darkBg:'#042f2e', darkBorder:'#115e59' },
+  { name:'Vermelho',light:'#dc2626',dark:'#f87171', light2:'#ef4444', lightBg:'#fef2f2', lightBorder:'#fecaca', darkBg:'#1f0a0a', darkBorder:'#991b1b' },
+];
+
+const BG_PRESETS = [
+  { name:'Padrão claro',  id:'default-light', light:'#f4f4f8', dark:null,    preview:'linear-gradient(135deg,#f4f4f8,#e8e8f0)' },
+  { name:'Branco puro',   id:'white',         light:'#ffffff', dark:null,    preview:'linear-gradient(135deg,#fff,#f0f0f0)' },
+  { name:'Creme',         id:'cream',         light:'#faf8f5', dark:null,    preview:'linear-gradient(135deg,#faf8f5,#f0ece4)' },
+  { name:'Escuro padrão', id:'default-dark',  light:null,      dark:'#0d0d14',preview:'linear-gradient(135deg,#1a1a2e,#0d0d14)' },
+  { name:'Escuro profundo',id:'deep-dark',    light:null,      dark:'#000008',preview:'linear-gradient(135deg,#0a0a0a,#000008)' },
+  { name:'Escuro azulado',id:'navy-dark',     light:null,      dark:'#0a0f1e',preview:'linear-gradient(135deg,#111827,#0a0f1e)' },
+];
+
+let profileData = JSON.parse(localStorage.getItem('hub_profile')||'{}');
+let pendingAccent = null;
+let pendingBg = null;
+
+function initProfile() {
+  renderAccentSwatches();
+  renderBgPresets();
+  applyProfileTheme();
+  updateProfileUI();
+}
+
+function updateProfileUI() {
+  const name   = profileData.name || 'Meu Perfil';
+  const avatar = profileData.avatar || null;
+  const initial = name.trim() ? name.trim()[0].toUpperCase() : '?';
+
+  // Top button
+  const btnAvatar = $('profile-btn-avatar');
+  const btnName   = $('profile-btn-name');
+  if(btnAvatar) {
+    if(avatar) btnAvatar.innerHTML = `<img src="${avatar}" alt="avatar"/>`;
+    else       btnAvatar.textContent = initial;
+  }
+  if(btnName) btnName.textContent = name;
+
+  // Panel
+  const ppAvatar = $('pp-avatar-big');
+  const ppName   = $('pp-name-input');
+  if(ppAvatar) {
+    if(avatar) ppAvatar.innerHTML = `<img src="${avatar}" alt="avatar"/>`;
+    else       ppAvatar.textContent = initial;
+  }
+  if(ppName) ppName.value = profileData.name || '';
+}
+
+function previewProfileName() {
+  const val = $('pp-name-input').value;
+  const initial = val.trim() ? val.trim()[0].toUpperCase() : '?';
+  const ppAvatar = $('pp-avatar-big');
+  if(ppAvatar && !profileData.avatar) ppAvatar.textContent = initial;
+  $('profile-btn-name').textContent = val || 'Meu Perfil';
+}
+
+function handleProfileAvatar(inp) {
+  const f = inp.files[0]; if(!f) return;
+  if(!f.type.startsWith('image/')) { toast('❌ Use uma imagem JPG ou PNG'); return; }
+  const r = new FileReader();
+  r.onload = e => {
+    const orig = new Image();
+    orig.onload = () => {
+      const size = 128;
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      // crop center square
+      const min = Math.min(orig.width, orig.height);
+      const sx = (orig.width-min)/2, sy = (orig.height-min)/2;
+      ctx.drawImage(orig, sx, sy, min, min, 0, 0, size, size);
+      const compressed = canvas.toDataURL('image/jpeg', 0.85);
+      profileData.avatar = compressed;
+      const ppAvatar = $('pp-avatar-big');
+      const btnAvatar = $('profile-btn-avatar');
+      if(ppAvatar)  ppAvatar.innerHTML  = `<img src="${compressed}" alt="avatar"/>`;
+      if(btnAvatar) btnAvatar.innerHTML = `<img src="${compressed}" alt="avatar"/>`;
+    };
+    orig.src = e.target.result;
+  };
+  r.readAsDataURL(f);
+}
+
+function renderAccentSwatches() {
+  const el = $('accent-swatches'); if(!el) return;
+  const current = profileData.accentIndex ?? 0;
+  el.innerHTML = ACCENT_COLORS.map((c,i) => `
+    <div class="color-swatch${i===current?' active':''}"
+      style="background:${c.light}"
+      title="${c.name}"
+      onclick="selectAccent(${i})">
+      <div class="check">✓</div>
+    </div>`).join('');
+}
+
+function selectAccent(idx) {
+  pendingAccent = idx;
+  document.querySelectorAll('.color-swatch').forEach((el,i) => {
+    el.classList.toggle('active', i===idx);
+  });
+  // Live preview
+  applyAccent(idx);
+}
+
+function applyAccent(idx) {
+  const c = ACCENT_COLORS[idx];
+  const dark = document.documentElement.getAttribute('data-theme')==='dark';
+  const root = document.documentElement.style;
+  root.setProperty('--accent',        dark ? c.dark    : c.light);
+  root.setProperty('--accent2',       dark ? c.light2  : c.light2);
+  root.setProperty('--accent-light',  dark ? c.darkBg  : c.lightBg);
+  root.setProperty('--accent-border', dark ? c.darkBorder : c.lightBorder);
+}
+
+function renderBgPresets() {
+  const el = $('bg-presets'); if(!el) return;
+  const currentBg = profileData.bgPreset || 'default-light';
+  el.innerHTML = BG_PRESETS.map(p => `
+    <div class="bg-preset${p.id===currentBg?' active':''}" onclick="selectBgPreset('${p.id}')">
+      <div class="bg-preset-preview" style="background:${p.preview}"></div>
+      <span class="bg-preset-label">${p.name}</span>
+    </div>`).join('');
+}
+
+function selectBgPreset(id) {
+  pendingBg = id;
+  document.querySelectorAll('.bg-preset').forEach(el => {
+    el.classList.toggle('active', el.onclick.toString().includes(`'${id}'`));
+  });
+  applyBgPreset(id);
+}
+
+function applyBgPreset(id) {
+  const preset = BG_PRESETS.find(p=>p.id===id);
+  if(!preset) return;
+  const dark = document.documentElement.getAttribute('data-theme')==='dark';
+  const root = document.documentElement.style;
+  if(dark && preset.dark)   root.setProperty('--bg', preset.dark);
+  if(!dark && preset.light) root.setProperty('--bg', preset.light);
+  // Switch theme if needed
+  if(id.includes('dark') && !dark)   { dark_=true;  applyTheme(); }
+  if(!id.includes('dark') && dark)   { dark_=false; applyTheme(); }
+}
+
+function applyProfileTheme() {
+  if(profileData.accentIndex != null) applyAccent(profileData.accentIndex);
+  if(profileData.bgPreset) applyBgPreset(profileData.bgPreset);
+}
+
+function saveProfile() {
+  profileData.name = $('pp-name-input').value.trim() || 'Meu Perfil';
+  if(pendingAccent != null) profileData.accentIndex = pendingAccent;
+  if(pendingBg != null)     profileData.bgPreset    = pendingBg;
+  localStorage.setItem('hub_profile', JSON.stringify(profileData));
+  pendingAccent = null; pendingBg = null;
+  updateProfileUI();
+  closeProfilePanel();
+  toast('✅ Perfil salvo!');
+}
+
+function toggleProfilePanel() {
+  const panel = $('profile-panel');
+  const isOpen = panel.classList.toggle('open');
+  if(isOpen) {
+    // Close sidebar on mobile
+    if(window.innerWidth <= 700) closeSidebar();
+    updateProfileUI();
+    renderAccentSwatches();
+    renderBgPresets();
+  }
+}
+
+function closeProfilePanel() {
+  $('profile-panel')?.classList.remove('open');
+}
+
+// Close panel when clicking outside
+document.addEventListener('click', e => {
+  const panel = $('profile-panel');
+  const btn   = $('profile-btn');
+  if(panel?.classList.contains('open') && !panel.contains(e.target) && !btn.contains(e.target)) {
+    closeProfilePanel();
+  }
+});
+
+// Re-apply accent when theme changes
+const _applyTheme = applyTheme;
+window.applyTheme = function() {
+  _applyTheme();
+  if(profileData.accentIndex != null) applyAccent(profileData.accentIndex);
+  if(profileData.bgPreset) applyBgPreset(profileData.bgPreset);
+};
+
+// Init
+initProfile();
+
+// ═══════ OFX / CSV IMPORTER ═══════
+let impFormat = 'ofx';
+let impRows   = [];
+
+function openImporter() {
+  resetImporter();
+  $('imp-modal').classList.add('open');
+}
+function closeImporter() { $('imp-modal').classList.remove('open'); }
+
+function setImportFormat(fmt) {
+  impFormat = fmt;
+  ['ofx','csv'].forEach(f => {
+    $(`imp-fmt-${f}`).classList.toggle('active', f === fmt);
+    $(`imp-tip-${f}`).style.display = f === fmt ? 'block' : 'none';
+  });
+  $('imp-drop-label').textContent = fmt === 'ofx'
+    ? 'Clique ou arraste o arquivo OFX aqui'
+    : 'Clique ou arraste o arquivo CSV aqui';
+  $('imp-file-input').accept = fmt === 'ofx' ? '.ofx,.ofc,.txt' : '.csv,.txt';
+}
+
+function resetImporter() {
+  $('imp-file-input').value = '';
+  $('imp-status').textContent = '';
+  $('imp-preview-section').style.display = 'none';
+  $('imp-rows').innerHTML = '';
+  $('imp-bank-badge').innerHTML = '';
+  $('imp-summary').innerHTML = '';
+  impRows = [];
+}
+
+// ── Category inference ──
+const CAT_MAP = [
+  {r:/mercado|superm|pão de açú|carrefour|extra |atacad|hiper|hortifruti/i, cat:'Alimentação'},
+  {r:/restauran|lanchon|burger|pizza|mcdon|subway|ifood|rappi|uber\s*eat|delivery/i, cat:'Alimentação'},
+  {r:/uber|99pop|cabify|taxi|ônibus|metro|combustív|gasolina|shell|posto|estacion/i, cat:'Transporte'},
+  {r:/aluguel|condomín|iptu|luz |energia|água |gás |net |internet|claro|vivo|tim|oi |telefon/i, cat:'Moradia'},
+  {r:/farmác|drogaria|médico|consulta|plano.saúde|hospital|clínica|laboratór/i, cat:'Saúde'},
+  {r:/netflix|spotify|amazon|disney|youtube|globoplay|hbo|apple|assinatura|prime/i, cat:'Assinaturas'},
+  {r:/steam|playstation|nintendo|xbox|game|jogo/i, cat:'Jogos'},
+  {r:/salário|salario|pagamento.receb|folha.pagam/i, cat:'Salário'},
+  {r:/freelan|serviço.prest|honorário|autonomo/i, cat:'Freelance'},
+  {r:/invest|rendimento|dividendo|juros.credit|cdb|lci|lca|fundo/i, cat:'Investimento'},
+  {r:/roupa|zara|renner|riachuelo|c&a|\bh&m\b|shein|hering/i, cat:'Roupas'},
+  {r:/farmácia|farmacia/i, cat:'Saúde'},
+];
+function inferCat(desc) {
+  for(const {r,cat} of CAT_MAP) if(r.test(desc)) return cat;
+  return 'Outros';
+}
+
+// ── OFX Parser ──
+function parseOFX(text) {
+  const rows = [];
+  // Support both SGML (old OFX) and XML OFX
+  const txBlocks = text.match(/<STMTTRN[\s\S]*?<\/STMTTRN>|<STMTTRN>[\s\S]*?(?=<STMTTRN>|<\/BANKTRANLIST>)/gi) || [];
+
+  // SGML format fallback: split by <STMTTRN>
+  let blocks = txBlocks;
+  if(!blocks.length) {
+    const raw = text.split(/<STMTTRN>/i).slice(1);
+    blocks = raw.map(b => '<STMTTRN>' + b.split(/<\/STMTTRN>/i)[0]);
+  }
+
+  for(const block of blocks) {
+    const get = tag => {
+      const m = block.match(new RegExp(`<${tag}>([^<\\r\\n]+)`, 'i'));
+      return m ? m[1].trim() : '';
+    };
+    const dtRaw  = get('DTPOSTED') || get('DTUSER');
+    const amt    = parseFloat((get('TRNAMT')||'0').replace(',','.'));
+    const memo   = get('MEMO') || get('NAME') || get('PAYEEID') || '';
+    const type   = get('TRNTYPE') || '';
+    if(!memo && !amt) continue;
+
+    // Parse date: YYYYMMDDHHMMSS or YYYYMMDD
+    let isoDate = new Date().toISOString().slice(0,10);
+    if(dtRaw.length >= 8) {
+      const y=dtRaw.slice(0,4), m=dtRaw.slice(4,6), d=dtRaw.slice(6,8);
+      isoDate = `${y}-${m}-${d}`;
+    }
+
+    const absAmt = Math.abs(amt);
+    const isCredit = amt > 0 || /CREDIT|DEP|INT|DIV/i.test(type);
+    rows.push({
+      date: isoDate,
+      dateDisplay: isoDate.split('-').reverse().join('/'),
+      desc: memo,
+      amount: absAmt,
+      type: isCredit ? 'entrada' : 'saida',
+      cat: inferCat(memo),
+      checked: true,
+    });
+  }
+  return rows;
+}
+
+// ── CSV Parser ──
+function parseCSV(text) {
+  // Detect delimiter
+  const firstLine = text.split('\n')[0];
+  const delim = firstLine.includes(';') ? ';' : ',';
+
+  const lines = text.trim().split('\n').map(l => l.trim()).filter(Boolean);
+  if(lines.length < 2) return [];
+
+  // Parse header
+  const headers = lines[0].split(delim).map(h => h.replace(/['"]/g,'').trim().toLowerCase());
+
+  // Find column indices
+  const findCol = (...names) => {
+    for(const n of names) {
+      const i = headers.findIndex(h => h.includes(n));
+      if(i >= 0) return i;
+    }
+    return -1;
+  };
+
+  const iDate  = findCol('data','date','dt');
+  const iDesc  = findCol('descrição','descricao','histórico','historico','memo','descrição','description','lançamento','lancamento');
+  const iVal   = findCol('valor','value','amount','quantia','transação','transacao');
+  const iType  = findCol('tipo','type','natureza','operação','operacao','crédito','debito','débito','credit');
+  const iValIn = findCol('entrada','crédito','credito','credit','valor.entrada');
+  const iValOut= findCol('saída','saida','débito','debito','debit','valor.saída');
+
+  const rows = [];
+
+  for(let i = 1; i < lines.length; i++) {
+    const cols = splitCsvLine(lines[i], delim);
+    if(!cols.length) continue;
+
+    let dateStr = iDate >= 0 ? (cols[iDate]||'').replace(/['"]/g,'').trim() : '';
+    let desc    = iDesc >= 0 ? (cols[iDesc]||'').replace(/['"]/g,'').trim() : '';
+    let rawVal  = iVal  >= 0 ? (cols[iVal] ||'').replace(/['"]/g,'').trim() : '';
+    let typeStr = iType >= 0 ? (cols[iType]||'').replace(/['"]/g,'').trim() : '';
+    let valIn   = iValIn  >= 0 ? (cols[iValIn] ||'').replace(/['"]/g,'').trim() : '';
+    let valOut  = iValOut >= 0 ? (cols[iValOut]||'').replace(/['"]/g,'').trim() : '';
+
+    if(!desc && !rawVal && !valIn && !valOut) continue;
+
+    // Parse amount — handle both 1.234,56 and 1,234.56
+    let amount = 0, isCredit = false;
+    if(valIn && parseBrNum(valIn) > 0) {
+      amount = parseBrNum(valIn); isCredit = true;
+    } else if(valOut && parseBrNum(valOut) > 0) {
+      amount = parseBrNum(valOut); isCredit = false;
+    } else if(rawVal) {
+      const n = parseBrNum(rawVal);
+      amount = Math.abs(n);
+      isCredit = n > 0 || /crédito|credit|entrada|receb/i.test(typeStr);
+      if(/débito|debit|saída|pagam/i.test(typeStr)) isCredit = false;
+    }
+    if(!amount) continue;
+
+    // Parse date
+    let isoDate = new Date().toISOString().slice(0,10);
+    if(dateStr) isoDate = parseAnyDate(dateStr);
+
+    rows.push({
+      date: isoDate,
+      dateDisplay: isoDate.split('-').reverse().join('/'),
+      desc: desc || 'Sem descrição',
+      amount,
+      type: isCredit ? 'entrada' : 'saida',
+      cat: inferCat(desc),
+      checked: true,
+    });
+  }
+  return rows;
+}
+
+function splitCsvLine(line, delim) {
+  const res = []; let cur = ''; let inQ = false;
+  for(let i=0; i<line.length; i++) {
+    const ch = line[i];
+    if(ch==='"') { inQ=!inQ; continue; }
+    if(ch===delim && !inQ) { res.push(cur); cur=''; continue; }
+    cur += ch;
+  }
+  res.push(cur);
+  return res;
+}
+
+function parseBrNum(s) {
+  if(!s) return 0;
+  s = s.replace(/[^\d,.-]/g,'').trim();
+  if(!s) return 0;
+  // 1.234,56 → 1234.56
+  if(s.match(/\d+\.\d{3},\d{2}/)) return parseFloat(s.replace(/\./g,'').replace(',','.'));
+  // 1,234.56 → as-is
+  if(s.match(/\d+,\d{3}\.\d{2}/)) return parseFloat(s.replace(/,/g,''));
+  // 1234,56 → 1234.56
+  if(s.match(/,\d{2}$/)) return parseFloat(s.replace(',','.'));
+  return parseFloat(s.replace(',','.')) || 0;
+}
+
+function parseAnyDate(s) {
+  s = s.trim().replace(/['"]/g,'');
+  // YYYY-MM-DD
+  if(s.match(/^\d{4}-\d{2}-\d{2}/)) return s.slice(0,10);
+  // DD/MM/YYYY or DD/MM/YY
+  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{2,4})/);
+  if(m) {
+    let y = m[3]; if(y.length===2) y='20'+y;
+    return `${y}-${m[2]}-${m[1]}`;
+  }
+  // YYYYMMDD
+  if(s.match(/^\d{8}$/)) return `${s.slice(0,4)}-${s.slice(4,6)}-${s.slice(6,8)}`;
+  return new Date().toISOString().slice(0,10);
+}
+
+function detectBankFromText(text) {
+  if(/nubank/i.test(text))    return 'Nubank';
+  if(/inter\b/i.test(text))   return 'Banco Inter';
+  if(/bradesco/i.test(text))  return 'Bradesco';
+  if(/itaú|itau/i.test(text)) return 'Itaú';
+  if(/santander/i.test(text)) return 'Santander';
+  if(/c6\s*bank/i.test(text)) return 'C6 Bank';
+  if(/sicoob/i.test(text))    return 'Sicoob';
+  if(/caixa/i.test(text))     return 'Caixa Econômica';
+  if(/bb\b|banco\s*do\s*brasil/i.test(text)) return 'Banco do Brasil';
+  return null;
+}
+
+// ── Main handler ──
+async function handleImportFile(inp) {
+  const file = inp.files[0]; if(!file) return;
+  const name = file.name.toLowerCase();
+
+  // Auto-detect format from extension
+  if(name.endsWith('.ofx') || name.endsWith('.ofc')) {
+    setImportFormat('ofx');
+  } else if(name.endsWith('.csv')) {
+    setImportFormat('csv');
+  }
+
+  $('imp-status').textContent = '⏳ Lendo arquivo...';
+  let text = '';
+  try {
+    text = await file.text();
+  } catch(e) {
+    $('imp-status').textContent = '❌ Erro ao ler o arquivo.'; return;
+  }
+  if(!text.trim()) {
+    $('imp-status').textContent = '❌ Arquivo vazio.'; return;
+  }
+
+  $('imp-status').textContent = '🔍 Identificando transações...';
+
+  let rows = [];
+  try {
+    rows = impFormat === 'ofx' ? parseOFX(text) : parseCSV(text);
+  } catch(e) {
+    $('imp-status').textContent = '❌ Erro ao processar o arquivo: '+e.message; return;
+  }
+
+  if(!rows.length) {
+    $('imp-status').textContent = '⚠️ Nenhuma transação encontrada. Verifique se o formato está correto ou tente o outro formato.';
+    return;
+  }
+
+  // Add IDs
+  impRows = rows.map((r,i) => ({...r, id:i}));
+  $('imp-status').textContent = '';
+  $('imp-preview-section').style.display = 'block';
+
+  const bank = detectBankFromText(text);
+  $('imp-bank-badge').innerHTML = `<div class="pdf-bank-badge">${bank ? '🏦 '+bank+' detectado' : '🏦 Banco não identificado — revise os dados'}</div>`;
+
+  renderImpRows();
+  updateImpSummary();
+}
+
+function renderImpRows() {
+  const CATS = ['Alimentação','Transporte','Moradia','Saúde','Lazer','Assinaturas','Eletrônicos','Roupas','Jogos','Salário','Freelance','Investimento','Venda','Presente','Outros'];
+  $('imp-rows').innerHTML = impRows.map(r => `
+    <tr class="${r.checked?'':'row-disabled'}" id="imp-row-${r.id}">
+      <td><input type="checkbox" class="pdf-check" ${r.checked?'checked':''} onchange="toggleImpRow(${r.id},this)"/></td>
+      <td style="white-space:nowrap;color:var(--text2);font-size:12px">${esc(r.dateDisplay)}</td>
+      <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px" title="${esc(r.desc)}">${esc(r.desc)}</td>
+      <td><select style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)" onchange="setImpRowCat(${r.id},this.value)">
+        ${CATS.map(c=>`<option${c===r.cat?' selected':''}>${c}</option>`).join('')}
+      </select></td>
+      <td><select style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)" onchange="setImpRowType(${r.id},this.value)">
+        <option value="entrada"${r.type==='entrada'?' selected':''}>⬆️ Entrada</option>
+        <option value="saida"${r.type==='saida'?' selected':''}>⬇️ Saída</option>
+      </select></td>
+      <td class="${r.type==='entrada'?'pdf-amount-pos':'pdf-amount-neg'}" style="white-space:nowrap;font-size:12px">
+        ${r.type==='entrada'?'+':'−'}${fp(r.amount)}
+      </td>
+    </tr>`).join('');
+}
+
+function toggleImpRow(id, cb) {
+  const r = impRows.find(r=>r.id===id); if(r){ r.checked=cb.checked; renderImpRows(); updateImpSummary(); }
+}
+function toggleAllImpRows(cb) {
+  impRows.forEach(r=>r.checked=cb.checked); renderImpRows(); updateImpSummary();
+}
+function setImpRowCat(id, val) { const r=impRows.find(r=>r.id===id); if(r) r.cat=val; }
+function setImpRowType(id, val) { const r=impRows.find(r=>r.id===id); if(r){ r.type=val; renderImpRows(); updateImpSummary(); } }
+
+function updateImpSummary() {
+  const sel = impRows.filter(r=>r.checked);
+  const ent = sel.filter(r=>r.type==='entrada').reduce((a,r)=>a+r.amount,0);
+  const sai = sel.filter(r=>r.type==='saida').reduce((a,r)=>a+r.amount,0);
+  $('imp-summary').innerHTML = `
+    <span>✅ <strong>${sel.length}</strong> de ${impRows.length} selecionadas</span>
+    <span>⬆️ Entradas: <strong style="color:var(--green)">${fp(ent)}</strong></span>
+    <span>⬇️ Saídas: <strong style="color:var(--red)">${fp(sai)}</strong></span>
+    <span>💰 Saldo: <strong style="color:${ent-sai>=0?'var(--green)':'var(--red)'}">${fp(ent-sai)}</strong></span>`;
+}
+
+function confirmImport() {
+  const sel = impRows.filter(r=>r.checked);
+  if(!sel.length) { toast('⚠️ Nenhuma transação selecionada.'); return; }
+  sel.forEach(r => D.fin.push({ id:uid(), desc:r.desc, val:r.amount, type:r.type, cat:r.cat, date:r.date }));
+  save('fin'); renderFinance(); renderIncomeWidget();
+  closeImporter();
+  toast(`✅ ${sel.length} transação(ões) importada(s) com sucesso!`);
+}
+
+// Drag & drop
+document.addEventListener('DOMContentLoaded', () => {
+  const zone = $('imp-drop-zone');
+  if(!zone) return;
+  zone.addEventListener('dragover',  e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag-over');
+    if(e.dataTransfer.files[0]) {
+      const dt = new DataTransfer(); dt.items.add(e.dataTransfer.files[0]);
+      $('imp-file-input').files = dt.files;
+      handleImportFile($('imp-file-input'));
+    }
+  });
+});
+
+// ═══════ SERVICE WORKER (PWA) ═══════
+if('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('SW registrado:', reg.scope))
+      .catch(err => console.log('SW erro:', err));
+  });
+}

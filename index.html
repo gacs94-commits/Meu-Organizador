@@ -2,8 +2,23 @@
 <html lang="pt-BR" data-theme="light">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Meu Organizador</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7c3aed">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Meu Hub">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="shortcut icon" href="favicon.ico">
+
+<!-- SEO / Description -->
+<meta name="description" content="Organizador pessoal — finanças, jogos, filmes, livros e metas">
+
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -11,6 +26,39 @@
 <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Menu">
   <span></span><span></span><span></span>
 </button>
+
+<!-- PROFILE BUTTON -->
+<div class="profile-btn" id="profile-btn" onclick="toggleProfilePanel()">
+  <div class="profile-avatar" id="profile-btn-avatar">?</div>
+  <span class="profile-name" id="profile-btn-name">Meu Perfil</span>
+  <span class="profile-chevron">▼</span>
+</div>
+
+<!-- PROFILE PANEL -->
+<div class="profile-panel" id="profile-panel">
+  <div class="pp-header">
+    <div class="pp-avatar-wrap" title="Clique para trocar a foto">
+      <div class="pp-avatar-big" id="pp-avatar-big">?</div>
+      <div class="pp-avatar-edit">✏️</div>
+      <input type="file" accept="image/*" class="pp-avatar-input" onchange="handleProfileAvatar(this)"/>
+    </div>
+    <input class="pp-name-input" id="pp-name-input" placeholder="Seu nome..." maxlength="30" oninput="previewProfileName()"/>
+  </div>
+
+  <div class="pp-section">
+    <div class="pp-section-title">Cor de destaque</div>
+    <div class="color-grid" id="accent-swatches"></div>
+  </div>
+
+  <div class="pp-section">
+    <div class="pp-section-title">Estilo de fundo</div>
+    <div class="bg-presets" id="bg-presets"></div>
+  </div>
+
+  <div class="pp-section">
+    <button class="pp-save-btn" onclick="saveProfile()">Salvar perfil</button>
+  </div>
+</div>
 <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
 
 <!-- SIDEBAR -->
@@ -37,22 +85,8 @@
   </div>
 
   <div class="sidebar-nav">
-    <div class="nav-section">Entretenimento</div>
-    <button class="nav-item active" onclick="goTo('games')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4M8 10v4M15 11h.01M17 13h.01"/></svg>
-      Jogos
-    </button>
-    <button class="nav-item" onclick="goTo('movies')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5"/></svg>
-      Filmes & Séries
-    </button>
-    <button class="nav-item" onclick="goTo('books')">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-      Livros
-    </button>
-
     <div class="nav-section">Finanças & Compras</div>
-    <button class="nav-item" onclick="goTo('finance')">
+    <button class="nav-item active" onclick="goTo('finance')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       Financeiro
     </button>
@@ -63,6 +97,20 @@
     <button class="nav-item" onclick="goTo('others')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
       Outros Itens
+    </button>
+
+    <div class="nav-section">Entretenimento</div>
+    <button class="nav-item" onclick="goTo('games')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4M8 10v4M15 11h.01M17 13h.01"/></svg>
+      Jogos
+    </button>
+    <button class="nav-item" onclick="goTo('movies')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5"/></svg>
+      Filmes & Séries
+    </button>
+    <button class="nav-item" onclick="goTo('books')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Livros
     </button>
 
     <div class="nav-section">Pessoal</div>
@@ -100,7 +148,7 @@
 <main class="main">
 
   <!-- ===== JOGOS ===== -->
-  <div class="section active" id="sec-games">
+  <div class="section" id="sec-games">
     <div class="section-header">
       <div class="section-title"><span class="icon">🎮</span> Jogos</div>
       <div class="section-desc">Sua wishlist e coleção pessoal</div>
@@ -330,16 +378,17 @@
   </div>
 
   <!-- ===== FINANCEIRO ===== -->
-  <div class="section" id="sec-finance">
+  <div class="section active" id="sec-finance">
     <div class="section-header">
       <div class="section-title"><span class="icon">💰</span> Financeiro</div>
       <div class="section-desc">Registro simples de entradas e saídas</div>
     </div>
 
     <!-- Sub-tabs -->
-    <div style="display:flex;gap:6px;margin-bottom:20px">
+    <div style="display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap">
       <button class="fbtn active" id="ftab-extrato" onclick="finTab('extrato')">📋 Extrato</button>
       <button class="fbtn" id="ftab-historico" onclick="finTab('historico')">📅 Histórico mensal</button>
+      <button class="fbtn" onclick="openImporter()" style="margin-left:auto">📥 Importar extrato</button>
     </div>
 
     <!-- EXTRATO PANEL -->
@@ -372,8 +421,11 @@
       <div class="stat"><div class="stat-lbl">Total saídas</div><div class="stat-val c-red" id="fin-s3">R$ 0</div></div>
       <div class="stat"><div class="stat-lbl">Transações</div><div class="stat-val c-accent" id="fin-s4">0</div></div>
     </div>
-    <div class="toolbar">
+    <div class="toolbar" style="flex-wrap:wrap;gap:8px">
       <span class="toolbar-title" id="fin-title">Extrato</span>
+      <select id="fin-month" onchange="renderFinance()" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--surface);color:var(--text);cursor:pointer">
+        <option value="">📅 Todos os meses</option>
+      </select>
       <input class="search" id="fin-search" placeholder="🔍 Buscar..." oninput="renderFinance()"/>
       <div class="filters">
         <button class="fbtn active" onclick="setF('fin','all',this)">Todos</button>
@@ -667,6 +719,65 @@
   </div>
 </div>
 <div class="toast" id="toast"></div>
+
+<!-- EXTRATO IMPORTER MODAL -->
+<div class="overlay" id="imp-modal">
+  <div class="modal" style="max-width:700px;width:100%">
+    <h3>📥 Importar extrato</h3>
+
+    <!-- Format selector -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <button class="fbtn active" id="imp-fmt-ofx" onclick="setImportFormat('ofx')">OFX / OFC</button>
+      <button class="fbtn" id="imp-fmt-csv" onclick="setImportFormat('csv')">CSV</button>
+      <span style="font-size:12px;color:var(--text3);align-self:center;margin-left:4px">— Nubank, Inter, Itaú, Bradesco, Santander, C6 e outros</span>
+    </div>
+
+    <!-- Format tips -->
+    <div id="imp-tip-ofx" class="imp-tip">
+      <strong>Como exportar OFX:</strong> Nubank → Perfil → Exportar extrato → OFX &nbsp;|&nbsp;
+      Inter → Extrato → Exportar → OFX &nbsp;|&nbsp; Itaú → Extrato → Salvar em OFX
+    </div>
+    <div id="imp-tip-csv" class="imp-tip" style="display:none">
+      <strong>Como exportar CSV:</strong> Nubank → Perfil → Exportar extrato → CSV &nbsp;|&nbsp;
+      Inter → Extrato → Exportar → CSV &nbsp;|&nbsp; Bradesco → Extrato → Exportar → Excel/CSV
+    </div>
+
+    <!-- Drop zone -->
+    <div class="pdf-drop-zone" id="imp-drop-zone">
+      <input type="file" accept=".ofx,.ofc,.csv,.txt" id="imp-file-input" onchange="handleImportFile(this)"/>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+      <p id="imp-drop-label">Clique ou arraste o arquivo OFX aqui</p>
+      <small>Processado localmente — nenhum dado enviado para a internet</small>
+    </div>
+
+    <div class="pdf-status" id="imp-status"></div>
+
+    <div id="imp-preview-section" style="display:none">
+      <div id="imp-bank-badge"></div>
+      <div class="pdf-summary" id="imp-summary"></div>
+      <div class="pdf-preview-wrap">
+        <table class="pdf-table">
+          <thead><tr>
+            <th style="width:30px"><input type="checkbox" class="pdf-check" id="imp-check-all" onchange="toggleAllImpRows(this)"/></th>
+            <th>Data</th><th>Descrição</th><th>Categoria</th><th>Tipo</th><th>Valor</th>
+          </tr></thead>
+          <tbody id="imp-rows"></tbody>
+        </table>
+      </div>
+      <div class="pdf-import-actions">
+        <button class="btn btn-secondary" onclick="resetImporter()">Limpar</button>
+        <button class="btn btn-primary" onclick="confirmImport()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:15px;height:15px"><polyline points="20 6 9 17 4 12"/></svg>
+          Importar selecionados
+        </button>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
+      <button class="btn btn-secondary" onclick="closeImporter()">Fechar</button>
+    </div>
+  </div>
+</div>
 
 <script src="app.js"></script>
 </body>
