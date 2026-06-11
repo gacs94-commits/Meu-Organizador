@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meu Organizador</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Menu">
+  <span></span><span></span><span></span>
+</button>
+<div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Meu Hub
+    </div>
+    <div class="sidebar-sub">Organizador pessoal</div>
+  </div>
+
+  <div class="income-widget" id="income-widget">
+    <div class="income-lbl">💵 Renda mensal</div>
+    <div class="income-display" id="income-display" onclick="editIncome()" title="Clique para editar">
+      <span class="income-amount empty" id="income-amt">Definir renda...</span>
+      <span class="income-edit-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>
+    </div>
+    <div class="income-bar-wrap" id="income-bar-wrap" style="display:none">
+      <div class="income-bar"><div class="income-bar-fill" id="income-bar-fill" style="width:0%"></div></div>
+      <div class="income-bar-labels"><span id="income-spent-lbl"></span><span id="income-pct-lbl"></span></div>
+      <div class="income-avail" id="income-avail"></div>
+    </div>
+  </div>
+
+  <div class="sidebar-nav">
+    <div class="nav-section">Entretenimento</div>
+    <button class="nav-item active" onclick="goTo('games')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4M8 10v4M15 11h.01M17 13h.01"/></svg>
+      Jogos
+    </button>
+    <button class="nav-item" onclick="goTo('movies')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M7 2v20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5"/></svg>
+      Filmes & Séries
+    </button>
+    <button class="nav-item" onclick="goTo('books')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Livros
+    </button>
+
+    <div class="nav-section">Finanças & Compras</div>
+    <button class="nav-item" onclick="goTo('finance')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Financeiro
+    </button>
+    <button class="nav-item" onclick="goTo('shopping')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+      Lista de Compras
+    </button>
+    <button class="nav-item" onclick="goTo('others')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+      Outros Itens
+    </button>
+
+    <div class="nav-section">Pessoal</div>
+    <button class="nav-item" onclick="goTo('goals')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      Metas
+    </button>
+    <button class="nav-item" onclick="goTo('invest')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+      Investimentos
+    </button>
+  </div>
+
+  <div class="sidebar-footer">
+    <div style="padding:0 8px 8px;display:flex;flex-direction:column;gap:4px">
+      <button class="theme-toggle" onclick="exportBackup()" style="color:var(--green)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;flex-shrink:0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        <span style="flex:1;text-align:left;font-size:13px">Exportar backup</span>
+      </button>
+      <button class="theme-toggle" onclick="$('import-input').click()" style="color:var(--accent)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;flex-shrink:0"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <span style="flex:1;text-align:left;font-size:13px">Importar backup</span>
+      </button>
+      <input type="file" id="import-input" accept=".json" style="display:none" onchange="importBackup(this)"/>
+    </div>
+    <button class="theme-toggle" onclick="toggleTheme()">
+      <svg id="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;flex-shrink:0"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <span id="theme-label" style="flex:1;text-align:left">Tema escuro</span>
+      <div class="toggle-track"><div class="toggle-thumb"></div></div>
+    </button>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- ===== JOGOS ===== -->
+  <div class="section active" id="sec-games">
+    <div class="section-header">
+      <div class="section-title"><span class="icon">🎮</span> Jogos</div>
+      <div class="section-desc">Sua wishlist e coleção pessoal</div>
+    </div>
+
+    <!-- Sub-tabs -->
+    <div style="display:flex;gap:6px;margin-bottom:20px">
+      <button class="fbtn active" id="gtab-wish" onclick="gamesTab('wish')">❤️ Quero comprar</button>
+      <button class="fbtn" id="gtab-col" onclick="gamesTab('col')">🕹️ Minha coleção</button>
+    </div>
+
+    <!-- WISHLIST -->
+    <div id="gpanel-wish">
+      <div class="card">
+        <h3>Adicionar jogo</h3>
+        <div class="form-row">
+          <div class="cover-up" id="w-cover-box" title="Capa">
+            <input type="file" accept="image/*" onchange="handleCover('w',this)"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Capa</span>
+            <button class="rm" type="button" onclick="rmCover('w',event)">✕</button>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:12px">
+            <div class="form-grid cols-3">
+              <div class="field"><label>Nome *</label>
+                <div style="display:flex;gap:6px">
+                  <input id="w-name" placeholder="ex: Elden Ring" style="flex:1"/>
+                  <button class="btn btn-primary" onclick="openGameSearch('w')" type="button" title="Buscar na internet" style="flex-shrink:0;padding:9px 11px">🔍</button>
+                </div>
+              </div>
+              <div class="field"><label>Plataforma</label><select id="w-plat"><option value="">—</option><option>PC</option><option>PS5</option><option>PS4</option><option>Xbox Series X/S</option><option>Xbox One</option><option>Nintendo Switch</option><option>Mobile</option></select></div>
+              <div class="field"><label>Prioridade</label><select id="w-prio"><option value="alta">🔴 Alta</option><option value="média" selected>🟡 Média</option><option value="baixa">🔵 Baixa</option></select></div>
+            </div>
+            <div class="form-grid cols-3">
+              <div class="field"><label>Preço est. (R$)</label><input type="number" id="w-price" placeholder="0,00" min="0" step="0.01"/></div>
+              <div class="field"><label>Gênero</label><input id="w-genre" placeholder="RPG, FPS..."/></div>
+              <div class="field"><label>Obs.</label><input id="w-note" placeholder="Aguardando promoção..."/></div>
+            </div>
+          </div>
+        </div>
+        <div class="form-actions"><button class="btn btn-primary" onclick="addWish()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Adicionar</button></div>
+      </div>
+      <div class="stats-row" id="w-stats" style="display:none">
+        <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val c-accent" id="w-s1">0</div></div>
+        <div class="stat"><div class="stat-lbl">Custo est.</div><div class="stat-val" id="w-s2" style="font-size:16px;padding-top:4px">R$ 0</div></div>
+        <div class="stat"><div class="stat-lbl">Alta prior.</div><div class="stat-val c-red" id="w-s3">0</div></div>
+        <div class="stat"><div class="stat-lbl">Baixa prior.</div><div class="stat-val c-blue" id="w-s4">0</div></div>
+      </div>
+      <div class="toolbar">
+        <span class="toolbar-title" id="w-title">Lista de desejos</span>
+        <input class="search" id="w-search" placeholder="🔍 Buscar..." oninput="renderWish()"/>
+        <div class="view-toggle"><button class="vbtn active" id="wv-list" onclick="setView('w','list')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button><button class="vbtn" id="wv-grid" onclick="setView('w','grid')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button></div>
+        <div class="filters">
+          <button class="fbtn active" onclick="setF('w','all',this)">Todos</button>
+          <button class="fbtn" onclick="setF('w','alta',this)">Alta</button>
+          <button class="fbtn" onclick="setF('w','média',this)">Média</button>
+          <button class="fbtn" onclick="setF('w','baixa',this)">Baixa</button>
+        </div>
+      </div>
+      <div id="w-insight"></div>
+    <div id="w-list"></div>
+    </div>
+
+    <!-- COLLECTION -->
+    <div id="gpanel-col" style="display:none">
+      <div class="card">
+        <h3>Adicionar jogo</h3>
+        <div class="form-row">
+          <div class="cover-up" id="c-cover-box" title="Capa">
+            <input type="file" accept="image/*" onchange="handleCover('c',this)"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span>Capa</span>
+            <button class="rm" type="button" onclick="rmCover('c',event)">✕</button>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:12px">
+            <div class="form-grid cols-3">
+              <div class="field"><label>Nome *</label>
+                <div style="display:flex;gap:6px">
+                  <input id="c-name" placeholder="ex: God of War" style="flex:1"/>
+                  <button class="btn btn-primary" onclick="openGameSearch('c')" type="button" title="Buscar na internet" style="flex-shrink:0;padding:9px 11px">🔍</button>
+                </div>
+              </div>
+              <div class="field"><label>Plataforma</label><select id="c-plat"><option value="">—</option><option>PC</option><option>PS5</option><option>PS4</option><option>Xbox Series X/S</option><option>Xbox One</option><option>Nintendo Switch</option><option>Mobile</option></select></div>
+              <div class="field"><label>Status</label><select id="c-status"><option value="nao">⏳ Não joguei</option><option value="jogando">🎮 Jogando</option><option value="parei">🛑 Joguei e parei</option><option value="zerado">🏆 Zerado</option><option value="platinado">💎 Platinado</option></select></div>
+            </div>
+            <div class="form-grid cols-3">
+              <div class="field"><label>Preço pago (R$)</label><input type="number" id="c-price" placeholder="0,00" min="0" step="0.01"/></div>
+              <div class="field"><label>Gênero</label><input id="c-genre" placeholder="Ação, RPG..."/></div>
+              <div class="field"><label>Obs.</label><input id="c-note" placeholder="Comprado na Steam..."/></div>
+            </div>
+            <div class="field">
+              <label>Minha avaliação</label>
+              <div class="star-picker" id="c-stars" data-val="0">
+                <span class="star" data-i="1" onclick="setFormStar('c',1)" onmouseenter="hoverStar('c',1)" onmouseleave="hoverStar('c',0)">★</span>
+                <span class="star" data-i="2" onclick="setFormStar('c',2)" onmouseenter="hoverStar('c',2)" onmouseleave="hoverStar('c',0)">★</span>
+                <span class="star" data-i="3" onclick="setFormStar('c',3)" onmouseenter="hoverStar('c',3)" onmouseleave="hoverStar('c',0)">★</span>
+                <span class="star" data-i="4" onclick="setFormStar('c',4)" onmouseenter="hoverStar('c',4)" onmouseleave="hoverStar('c',0)">★</span>
+                <span class="star" data-i="5" onclick="setFormStar('c',5)" onmouseenter="hoverStar('c',5)" onmouseleave="hoverStar('c',0)">★</span>
+                <span style="font-size:12px;color:var(--text3);margin-left:6px" id="c-stars-lbl">(Horrível / Ruim / Ok / Bom / Excelente)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="form-actions"><button class="btn btn-primary" onclick="addCol()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Adicionar</button></div>
+      </div>
+      <div class="stats-row" id="c-stats" style="display:none">
+        <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val c-accent" id="c-s1">0</div></div>
+        <div class="stat"><div class="stat-lbl">Zerados/Plat.</div><div class="stat-val c-green" id="c-s2">0</div></div>
+        <div class="stat"><div class="stat-lbl">Parei</div><div class="stat-val c-red" id="c-s3">0</div></div>
+        <div class="stat"><div class="stat-lbl">Nota média</div><div class="stat-val" id="c-s4" style="font-size:18px;padding-top:4px">—</div></div>
+      </div>
+      <div class="toolbar">
+        <span class="toolbar-title" id="c-title">Minha coleção</span>
+        <input class="search" id="c-search" placeholder="🔍 Buscar..." oninput="renderCol()"/>
+        <div class="view-toggle"><button class="vbtn active" id="cv-list" onclick="setView('c','list')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button><button class="vbtn" id="cv-grid" onclick="setView('c','grid')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button></div>
+        <div class="filters">
+          <button class="fbtn active" onclick="setF('c','all',this)">Todos</button>
+          <button class="fbtn" onclick="setF('c','nao',this)">Não joguei</button>
+          <button class="fbtn" onclick="setF('c','jogando',this)">🎮 Jogando</button>
+          <button class="fbtn" onclick="setF('c','parei',this)">🛑 Parei</button>
+          <button class="fbtn" onclick="setF('c','zerado',this)">🏆 Zerados</button>
+          <button class="fbtn" onclick="setF('c','platinado',this)">💎 Platinados</button>
+        </div>
+      </div>
+      <div id="c-list"></div>
+    </div>
+  </div>
+
+  <!-- ===== FILMES & SÉRIES ===== -->
+  <div class="section" id="sec-movies">
+    <div class="section-header">
+      <div class="section-title"><span class="icon">🎬</span> Filmes & Séries</div>
+      <div class="section-desc">Sua lista de títulos para assistir e assistidos</div>
+    </div>
+    <div class="card">
+      <h3>Adicionar título</h3>
+      <div class="form-row">
+        <div class="cover-up" id="mv-cover-box" title="Capa">
+          <input type="file" accept="image/*" onchange="handleCover('mv',this)"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <span>Capa</span>
+          <button class="rm" type="button" onclick="rmCover('mv',event)">✕</button>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:12px">
+          <div class="form-grid cols-3">
+            <div class="field"><label>Título *</label><input id="mv-name" placeholder="ex: Breaking Bad"/></div>
+            <div class="field"><label>Tipo</label><select id="mv-type"><option value="filme">🎬 Filme</option><option value="serie">📺 Série</option><option value="anime">⛩️ Anime</option><option value="doc">🎥 Doc.</option></select></div>
+            <div class="field"><label>Status</label><select id="mv-status"><option value="quero">👀 Quero ver</option><option value="assistindo">▶️ Assistindo</option><option value="assistido">✅ Assistido</option></select></div>
+          </div>
+          <div class="form-grid cols-3">
+            <div class="field"><label>Gênero</label><input id="mv-genre" placeholder="Drama, Ação..."/></div>
+            <div class="field"><label>Plataforma</label><input id="mv-plat" placeholder="Netflix, Prime..."/></div>
+            <div class="field"><label>Nota (1-10)</label><input type="number" id="mv-score" min="1" max="10" placeholder="—"/></div>
+          </div>
+        </div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" onclick="addMovie()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Adicionar</button></div>
+    </div>
+    <div class="stats-row" id="mv-stats" style="display:none">
+      <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val c-accent" id="mv-s1">0</div></div>
+      <div class="stat"><div class="stat-lbl">Assistidos</div><div class="stat-val c-green" id="mv-s2">0</div></div>
+      <div class="stat"><div class="stat-lbl">Para ver</div><div class="stat-val c-amber" id="mv-s3">0</div></div>
+      <div class="stat"><div class="stat-lbl">Nota média</div><div class="stat-val c-accent" id="mv-s4">—</div></div>
+    </div>
+    <div class="toolbar">
+      <span class="toolbar-title" id="mv-title">Filmes & Séries</span>
+      <input class="search" id="mv-search" placeholder="🔍 Buscar..." oninput="renderMovies()"/>
+      <div class="view-toggle"><button class="vbtn active" id="mvv-list" onclick="setView('mv','list')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button><button class="vbtn" id="mvv-grid" onclick="setView('mv','grid')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button></div>
+      <div class="filters">
+        <button class="fbtn active" onclick="setF('mv','all',this)">Todos</button>
+        <button class="fbtn" onclick="setF('mv','quero',this)">Quero ver</button>
+        <button class="fbtn" onclick="setF('mv','assistindo',this)">Assistindo</button>
+        <button class="fbtn" onclick="setF('mv','assistido',this)">Assistidos</button>
+      </div>
+    </div>
+    <div id="mv-list"></div>
+  </div>
+
+  <!-- ===== LIVROS ===== -->
+  <div class="section" id="sec-books">
+    <div class="section-header">
+      <div class="section-title"><span class="icon">📚</span> Livros</div>
+      <div class="section-desc">Sua estante virtual de leituras</div>
+    </div>
+    <div class="card">
+      <h3>Adicionar livro</h3>
+      <div class="form-row">
+        <div class="cover-up" id="bk-cover-box" title="Capa">
+          <input type="file" accept="image/*" onchange="handleCover('bk',this)"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <span>Capa</span>
+          <button class="rm" type="button" onclick="rmCover('bk',event)">✕</button>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:12px">
+          <div class="form-grid cols-3">
+            <div class="field"><label>Título *</label><input id="bk-name" placeholder="ex: Duna"/></div>
+            <div class="field"><label>Autor</label><input id="bk-author" placeholder="ex: Frank Herbert"/></div>
+            <div class="field"><label>Status</label><select id="bk-status"><option value="quero">📖 Quero ler</option><option value="lendo">🔖 Lendo</option><option value="lido">✅ Lido</option></select></div>
+          </div>
+          <div class="form-grid cols-3">
+            <div class="field"><label>Gênero</label><input id="bk-genre" placeholder="Ficção, Terror..."/></div>
+            <div class="field"><label>Páginas</label><input type="number" id="bk-pages" placeholder="—" min="0"/></div>
+            <div class="field"><label>Nota (1-10)</label><input type="number" id="bk-score" min="1" max="10" placeholder="—"/></div>
+          </div>
+        </div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" onclick="addBook()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Adicionar</button></div>
+    </div>
+    <div class="stats-row" id="bk-stats" style="display:none">
+      <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val c-accent" id="bk-s1">0</div></div>
+      <div class="stat"><div class="stat-lbl">Lidos</div><div class="stat-val c-green" id="bk-s2">0</div></div>
+      <div class="stat"><div class="stat-lbl">Para ler</div><div class="stat-val c-amber" id="bk-s3">0</div></div>
+      <div class="stat"><div class="stat-lbl">Nota média</div><div class="stat-val c-accent" id="bk-s4">—</div></div>
+    </div>
+    <div class="toolbar">
+      <span class="toolbar-title" id="bk-title">Livros</span>
+      <input class="search" id="bk-search" placeholder="🔍 Buscar..." oninput="renderBooks()"/>
+      <div class="view-toggle"><button class="vbtn active" id="bkv-list" onclick="setView('bk','list')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg></button><button class="vbtn" id="bkv-grid" onclick="setView('bk','grid')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></button></div>
+      <div class="filters">
+        <button class="fbtn active" onclick="setF('bk','all',this)">Todos</button>
+        <button class="fbtn" onclick="setF('bk','quero',this)">Quero ler</button>
+        <button class="fbtn" onclick="setF('bk','lendo',this)">Lendo</button>
+        <button class="fbtn" onclick="setF('bk','lido',this)">Lidos</button>
+      </div>
+    </div>
+    <div id="bk-list"></div>
+  </div>
+
+  <!-- ===== FINANCEIRO ===== -->
+  <div class="section" id="sec-finance">
+    <div class="section-header">
+      <div class="section-title"><span class="icon">💰</span> Financeiro</div>
+      <div class="section-desc">Registro simples de entradas e saídas</div>
+    </div>
+
+    <!-- Sub-tabs -->
+    <div style="display:flex;gap:6px;margin-bottom:20px">
+      <button class="fbtn active" id="ftab-extrato" onclick="finTab('extrato')">📋 Extrato</button>
+      <button class="fbtn" id="ftab-historico" onclick="finTab('historico')">📅 Histórico mensal</button>
+    </div>
+
+    <!-- EXTRATO PANEL -->
+    <div id="fpanel-extrato">
+    <div class="card">
+      <h3>Registrar transação</h3>
+      <div style="margin-bottom:12px">
+        <div class="fin-type-toggle">
+          <button class="fin-type-btn entrada active" id="fin-btn-entrada" onclick="setFinType('entrada')">⬆️ Entrada</button>
+          <button class="fin-type-btn saida" id="fin-btn-saida" onclick="setFinType('saida')">⬇️ Saída</button>
+        </div>
+      </div>
+      <div class="form-grid cols-4">
+        <div class="field"><label>Descrição *</label><input id="fin-desc" placeholder="ex: Salário, Mercado..."/></div>
+        <div class="field"><label>Valor (R$) *</label><input type="number" id="fin-val" placeholder="0,00" min="0" step="0.01"/></div>
+        <div class="field"><label>Categoria</label>
+          <select id="fin-cat">
+            <option value="">— Categoria —</option>
+            <optgroup label="Entradas"><option>Salário</option><option>Freelance</option><option>Venda</option><option>Investimento</option><option>Presente</option></optgroup>
+            <optgroup label="Saídas"><option>Alimentação</option><option>Transporte</option><option>Moradia</option><option>Saúde</option><option>Lazer</option><option>Assinaturas</option><option>Eletrônicos</option><option>Roupas</option><option>Jogos</option><option>Outros</option></optgroup>
+          </select>
+        </div>
+        <div class="field"><label>Data</label><input type="date" id="fin-date"/></div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" onclick="addFinance()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Registrar</button></div>
+    </div>
+    <div class="stats-row" id="fin-stats" style="display:none">
+      <div class="stat"><div class="stat-lbl">Saldo atual</div><div class="stat-val" id="fin-s1">R$ 0</div></div>
+      <div class="stat"><div class="stat-lbl">Total entradas</div><div class="stat-val c-green" id="fin-s2">R$ 0</div></div>
+      <div class="stat"><div class="stat-lbl">Total saídas</div><div class="stat-val c-red" id="fin-s3">R$ 0</div></div>
+      <div class="stat"><div class="stat-lbl">Transações</div><div class="stat-val c-accent" id="fin-s4">0</div></div>
+    </div>
+    <div class="toolbar">
+      <span class="toolbar-title" id="fin-title">Extrato</span>
+      <input class="search" id="fin-search" placeholder="🔍 Buscar..." oninput="renderFinance()"/>
+      <div class="filters">
+        <button class="fbtn active" onclick="setF('fin','all',this)">Todos</button>
+        <button class="fbtn" onclick="setF('fin','entrada',this)">Entradas</button>
+        <button class="fbtn" onclick="setF('fin','saida',this)">Saídas</button>
+      </div>
+    </div>
+    <div id="fin-list"></div>
+    </div>
+
+    <!-- HISTÓRICO PANEL -->
+    <div id="fpanel-historico" style="display:none">
+      <div id="fin-history"></div>
+    </div>
+  </div>
+
+  <!-- ===== LISTA DE COMPRAS ===== -->
+  <div class="section" id="sec-shopping">
+    <div class="section-header">
+      <div class="section-title"><span class="icon">🛒</span> Lista de Compras</div>
+      <div class="section-desc">Itens para comprar com controle de preço</div>
+    </div>
+    <div class="card">
+      <h3>Adicionar item</h3>
+      <div class="form-grid cols-4">
+        <div class="field"><label>Item *</label><input id="sh-name" placeholder="ex: Arroz 5kg"/></div>
+        <div class="field"><label>Qtd</label><input type="number" id="sh-qty" placeholder="1" min="1" value="1"/></div>
+        <div class="field"><label>Preço unit. (R$)</label><input type="number" id="sh-price" placeholder="0,00" min="0" step="0.01"/></div>
+        <div class="field"><label>Categoria</label>
+          <select id="sh-cat">
+            <option value="">—</option>
+            <option>Alimentos</option><option>Bebidas</option><option>Limpeza</option><option>Higiene</option><option>Eletrônicos</option><option>Roupas</option><option>Casa</option><option>Outros</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" onclick="addShopping()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Adicionar</button></div>
+    </div>
+    <div class="stats-row" id="sh-stats" style="display:none">
+      <div class="stat"><div class="stat-lbl">Total itens</div><div class="stat-val c-accent" id="sh-s1">0</div></div>
+      <div class="stat"><div class="stat-lbl">Comprados</div><div class="stat-val c-green" id="sh-s2">0</div></div>
+      <div class="stat"><div class="stat-lbl">Pendentes</div><div class="stat-val c-amber" id="sh-s3">0</div></div>
+      <div class="stat"><div class="stat-lbl">Total est.</div><div class="stat-val" id="sh-s4" style="font-size:16px;padding-top:4px">R$ 0</div></div>
+    </div>
+    <div class="toolbar">
+      <span class="toolbar-title" id="sh-title">Lista de compras</span>
+      <input class="search" id="sh-search" placeholder="🔍 Buscar..." oninput="renderShopping()"/>
+      <div class="filters">
+        <button class="fbtn active" onclick="setF('sh','all',this)">Todos</button>
+        <button class="fbtn" onclick="setF('sh','pending',this)">Pendentes</button>
+        <button class="fbtn" onclick="setF('sh','done',this)">Comprados</button>
+      </div>
+    </div>
+    <div id="sh-list"></div>
+  </div>
+
+  <!-- ===== OUTROS ITENS ===== -->
+  <div class="section" id="sec-others">
+    <div class="section-header">
+      <div class="section-title"><span class="icon">📦</span> Outros Itens</div>
+      <div class="section-desc">Eletrônicos, roupas, gadgets e tudo mais</div>
+    </div>
+    <div class="card">
+      <h3>Adicionar item</h3>
+      <div class="form-grid cols-4">
+        <div class="field"><label>Nome *</label><input id="ot-name" placeholder="ex: iPhone 16"/></div>
+        <div class="field"><label>Categoria</label>
+          <select id="ot-cat">
+            <option value="">—</option>
+            <option>Eletrônicos</option><option>Roupas</option><option>Calçados</option><option>Casa</option><option>Esportes</option><option>Acessórios</option><option>Outros</option>
+          </select>
+        </div>
+        <div class="field"><label>Preço (R$)</label><input type="number" id="ot-price" placeholder="0,00" min="0" step="0.01"/></div>
+        <div class="field"><label>Status</label><select id="ot-status"><option value="quero">🤩 Quero</option><option value="tenho">✅ Tenho</option></select></div>
+      </div>
+      <div class="form-grid cols-2" style="margin-top:12px">
+        <div class="field"><label>Prioridade</label><select id="ot-prio"><option value="alta">🔴 Alta</option><option value="média" selected>🟡 Média</option><option value="baixa">🔵 Baixa</option></select></div>
+        <div class="field"><label>Obs.</label><input id="ot-note" placeholder="Link, loja, detalhes..."/></div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" onclick="addOther()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Adicionar</button></div>
+    </div>
+    <div class="stats-row" id="ot-stats" style="display:none">
+      <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val c-accent" id="ot-s1">0</div></div>
+      <div class="stat"><div class="stat-lbl">Tenho</div><div class="stat-val c-green" id="ot-s2">0</div></div>
+      <div class="stat"><div class="stat-lbl">Quero</div><div class="stat-val c-amber" id="ot-s3">0</div></div>
+      <div class="stat"><div class="stat-lbl">Custo est.</div><div class="stat-val" id="ot-s4" style="font-size:16px;padding-top:4px">R$ 0</div></div>
+    </div>
+    <div class="toolbar">
+      <span class="toolbar-title" id="ot-title">Outros itens</span>
+      <input class="search" id="ot-search" placeholder="🔍 Buscar..." oninput="renderOthers()"/>
+      <div class="filters">
+        <button class="fbtn active" onclick="setF('ot','all',this)">Todos</button>
+        <button class="fbtn" onclick="setF('ot','quero',this)">Quero</button>
+        <button class="fbtn" onclick="setF('ot','tenho',this)">Tenho</button>
+      </div>
+    </div>
+    <div id="ot-list"></div>
+  </div>
+
+  <!-- ===== METAS ===== -->
+  <div class="section" id="sec-goals">
+    <div class="section-header">
+      <div class="section-title"><span class="icon">🎯</span> Metas Pessoais</div>
+      <div class="section-desc">Acompanhe seus objetivos com barra de progresso</div>
+    </div>
+    <div class="card">
+      <h3>Nova meta</h3>
+      <div class="form-grid cols-4">
+        <div class="field"><label>Meta *</label><input id="gl-name" placeholder="ex: Economizar R$ 5.000"/></div>
+        <div class="field"><label>Categoria</label>
+          <select id="gl-cat">
+            <option value="">—</option>
+            <option>Financeiro</option><option>Saúde</option><option>Carreira</option><option>Estudos</option><option>Lazer</option><option>Outros</option>
+          </select>
+        </div>
+        <div class="field"><label>Meta (valor/qtd)</label><input type="number" id="gl-target" placeholder="100" min="0"/></div>
+        <div class="field"><label>Progresso atual</label><input type="number" id="gl-current" placeholder="0" min="0" value="0"/></div>
+      </div>
+      <div class="form-grid cols-3" style="margin-top:12px">
+        <div class="field"><label>Prazo</label><input type="date" id="gl-deadline"/></div>
+        <div class="field"><label>Unidade</label><input id="gl-unit" placeholder="ex: R$, km, livros..."/></div>
+        <div class="field"><label>Status</label><select id="gl-status"><option value="ativa">🔥 Ativa</option><option value="pausada">⏸️ Pausada</option><option value="concluida">✅ Concluída</option></select></div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" onclick="addGoal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Criar meta</button></div>
+    </div>
+    <div class="stats-row" id="gl-stats" style="display:none">
+      <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val c-accent" id="gl-s1">0</div></div>
+      <div class="stat"><div class="stat-lbl">Ativas</div><div class="stat-val c-amber" id="gl-s2">0</div></div>
+      <div class="stat"><div class="stat-lbl">Concluídas</div><div class="stat-val c-green" id="gl-s3">0</div></div>
+      <div class="stat"><div class="stat-lbl">Pausadas</div><div class="stat-val c-blue" id="gl-s4">0</div></div>
+    </div>
+    <div class="toolbar">
+      <span class="toolbar-title" id="gl-title">Metas</span>
+      <input class="search" id="gl-search" placeholder="🔍 Buscar..." oninput="renderGoals()"/>
+      <div class="filters">
+        <button class="fbtn active" onclick="setF('gl','all',this)">Todas</button>
+        <button class="fbtn" onclick="setF('gl','ativa',this)">Ativas</button>
+        <button class="fbtn" onclick="setF('gl','concluida',this)">Concluídas</button>
+        <button class="fbtn" onclick="setF('gl','pausada',this)">Pausadas</button>
+      </div>
+    </div>
+    <div id="gl-list"></div>
+  </div>
+
+  <!-- ===== INVESTIMENTOS ===== -->
+  <div class="section" id="sec-invest">
+    <div class="section-header">
+      <div class="section-title"><span class="icon">💹</span> Simulador de Investimentos</div>
+      <div class="section-desc">Calcule quanto tempo para juntar um valor ou quanto vai acumular num período</div>
+    </div>
+
+    <div style="display:flex;gap:6px;margin-bottom:20px">
+      <button class="fbtn active" id="itab-prazo"   onclick="investTab('prazo')">🎯 Simular prazo</button>
+      <button class="fbtn"        id="itab-acumulo" onclick="investTab('acumulo')">📈 Simular acúmulo</button>
+    </div>
+
+    <!-- MODO 1: SIMULAR PRAZO -->
+    <div id="ipanel-prazo">
+      <div class="card">
+        <h3>Em quanto tempo junto o valor?</h3>
+        <div class="form-grid cols-4">
+          <div class="field">
+            <label class="tooltip-wrap">Valor alvo (R$)
+              <span class="tooltip-icon">?<span class="tooltip-box">É quanto você quer juntar no total. Ex: R$ 10.000 para uma viagem ou reserva de emergência.</span></span>
+            </label>
+            <input type="number" id="ip-goal" placeholder="ex: 10000" min="0" step="0.01" oninput="calcPrazo()"/>
+          </div>
+          <div class="field">
+            <label class="tooltip-wrap">Aporte mensal (R$)
+              <span class="tooltip-icon">?<span class="tooltip-box">Quanto você vai depositar todo mês, de forma recorrente. Ex: R$ 500 por mês do seu salário.</span></span>
+            </label>
+            <input type="number" id="ip-aporte" placeholder="ex: 500" min="0" step="0.01" oninput="calcPrazo()"/>
+          </div>
+          <div class="field">
+            <label class="tooltip-wrap">Valor inicial (R$)
+              <span class="tooltip-icon">?<span class="tooltip-box">Dinheiro que você já tem guardado hoje e vai colocar de uma vez só no início. Se não tiver nada, deixe em 0.</span></span>
+            </label>
+            <input type="number" id="ip-inicial" placeholder="0,00" min="0" step="0.01" oninput="calcPrazo()" value="0"/>
+          </div>
+          <div class="field">
+            <label>Taxa de juros</label>
+            <select id="ip-taxa" onchange="toggleCustomRate('p');calcPrazo()">
+              <option value="0">Sem juros (0%)</option>
+              <option value="0.5">Poupança (~0,5% a.m.)</option>
+              <option value="0.83">CDI ~100% (~0,83% a.m.)</option>
+              <option value="1">1% ao mês</option>
+              <option value="custom">Personalizado...</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid cols-2" id="ip-custom-wrap" style="display:none;margin-top:12px">
+          <div class="field">
+            <label>Taxa personalizada</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="number" id="ip-custom-val" placeholder="ex: 1.2" min="0" step="0.01" oninput="calcPrazo()" style="flex:1"/>
+              <select id="ip-custom-period" onchange="calcPrazo()" style="width:130px">
+                <option value="month">% ao mês</option>
+                <option value="year">% ao ano</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="ip-result"></div>
+    </div>
+
+    <!-- MODO 2: SIMULAR ACÚMULO -->
+    <div id="ipanel-acumulo" style="display:none">
+      <div class="card">
+        <h3>Quanto vou acumular?</h3>
+        <div class="form-grid cols-4">
+          <div class="field">
+            <label class="tooltip-wrap">Aporte mensal (R$)
+              <span class="tooltip-icon">?<span class="tooltip-box">Quanto você vai depositar todo mês, de forma recorrente. Ex: R$ 500 por mês do seu salário.</span></span>
+            </label>
+            <input type="number" id="ia-aporte" placeholder="ex: 500" min="0" step="0.01" oninput="calcAcumulo()"/>
+          </div>
+          <div class="field">
+            <label class="tooltip-wrap">Valor inicial (R$)
+              <span class="tooltip-icon">?<span class="tooltip-box">Dinheiro que você já tem guardado hoje e vai colocar de uma vez só no início. Se não tiver nada, deixe em 0.</span></span>
+            </label>
+            <input type="number" id="ia-inicial" placeholder="0,00" min="0" step="0.01" oninput="calcAcumulo()" value="0"/>
+          </div>
+          <div class="field">
+            <label>Período</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="number" id="ia-periodo" placeholder="ex: 24" min="1" oninput="calcAcumulo()" style="flex:1"/>
+              <select id="ia-periodo-unit" onchange="calcAcumulo()" style="width:110px">
+                <option value="months">meses</option>
+                <option value="years">anos</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Taxa de juros</label>
+            <select id="ia-taxa" onchange="toggleCustomRate('a');calcAcumulo()">
+              <option value="0">Sem juros (0%)</option>
+              <option value="0.5">Poupança (~0,5% a.m.)</option>
+              <option value="0.83">CDI ~100% (~0,83% a.m.)</option>
+              <option value="1">1% ao mês</option>
+              <option value="custom">Personalizado...</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid cols-2" id="ia-custom-wrap" style="display:none;margin-top:12px">
+          <div class="field">
+            <label>Taxa personalizada</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <input type="number" id="ia-custom-val" placeholder="ex: 1.2" min="0" step="0.01" oninput="calcAcumulo()" style="flex:1"/>
+              <select id="ia-custom-period" onchange="calcAcumulo()" style="width:130px">
+                <option value="month">% ao mês</option>
+                <option value="year">% ao ano</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="ia-result"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- MODALS -->
+<div class="overlay" id="modal-edit">
+  <div class="modal">
+    <h3 id="modal-title">✏️ Editar</h3>
+    <div id="modal-body"></div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveCurrentEdit()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLb()">
+  <img id="lb-img" src="" alt=""/>
+</div>
+
+<!-- GAME SEARCH MODAL -->
+<div class="overlay" id="gs-modal">
+  <div class="gs-modal">
+    <h3 style="font-size:15px;font-weight:800;margin-bottom:14px">🔍 Buscar jogo</h3>
+    <div class="gs-search-row">
+      <input id="gs-input" placeholder="Digite o nome do jogo..." oninput="onGameSearchInput()" onkeydown="if(event.key==='Escape')closeGameSearch()"/>
+      <button class="btn btn-secondary" onclick="closeGameSearch()">Cancelar</button>
+    </div>
+    <div class="gs-status" id="gs-status"></div>
+    <div class="gs-results" id="gs-results">
+      <div style="text-align:center;padding:30px 16px;color:var(--text3);font-size:13px">Digite o nome do jogo para buscar</div>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
