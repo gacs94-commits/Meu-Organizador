@@ -1822,7 +1822,73 @@ function toggleProfilePanel() {
     updateProfileUI();
     renderAccentSwatches();
     renderBgPresets();
+    renderStorageUsage();
   }
+}
+
+// ── Storage usage ──
+function getStorageUsage() {
+  const LABELS = {
+    hub_wish:'Jogos (wishlist)', hub_col:'Jogos (coleção)',
+    hub_mv:'Filmes & Séries',   hub_bk:'Livros',
+    hub_fin:'Financeiro',       hub_sh:'Lista de compras',
+    hub_ot:'Outros itens',      hub_gl:'Metas',
+    hub_profile:'Perfil',       hub_income:'Renda',
+  };
+  const breakdown = [];
+  let total = 0;
+  for(const [key, label] of Object.entries(LABELS)) {
+    const val   = localStorage.getItem(key) || '';
+    const bytes = new Blob([val]).size;
+    if(bytes > 0) breakdown.push({ label, bytes });
+    total += bytes;
+  }
+  breakdown.sort((a,b) => b.bytes - a.bytes);
+  return { total, breakdown };
+}
+
+function fmtBytes(b) {
+  if(b < 1024)       return b + ' B';
+  if(b < 1024*1024)  return (b/1024).toFixed(1) + ' KB';
+  return (b/1024/1024).toFixed(2) + ' MB';
+}
+
+function renderStorageUsage() {
+  const el = $('pp-storage'); if(!el) return;
+  const MAX = 5 * 1024 * 1024; // 5MB
+  const { total, breakdown } = getStorageUsage();
+  const pct   = Math.min(100, Math.round((total/MAX)*100));
+  const free  = Math.max(0, MAX - total);
+  const color = pct > 85 ? 'var(--red)' : pct > 60 ? 'var(--amber)' : 'var(--green)';
+
+  const rows = breakdown.slice(0,6).map(r => {
+    const rowPct = total > 0 ? Math.round((r.bytes/total)*100) : 0;
+    return `<div class="storage-row">
+      <span class="storage-row-label">${r.label}</span>
+      <div class="storage-row-bar"><div class="storage-row-fill" style="width:${rowPct}%"></div></div>
+      <span class="storage-row-val">${fmtBytes(r.bytes)}</span>
+    </div>`;
+  }).join('');
+
+  const tip = pct > 85
+    ? `<div class="storage-tip">⚠️ Quase cheio! Exporte um backup e remova capas para liberar espaço.</div>`
+    : pct > 60
+    ? `<div class="storage-tip">⚡ Uso moderado. Imagens de capa são o maior consumidor.</div>`
+    : `<div class="storage-ok">✅ Armazenamento saudável.</div>`;
+
+  el.innerHTML = `
+    <div class="storage-bar-wrap">
+      <div class="storage-labels">
+        <span class="storage-used">${fmtBytes(total)} de 5 MB</span>
+        <span class="storage-pct" style="color:${color}">${pct}%</span>
+      </div>
+      <div class="storage-bar-track">
+        <div class="storage-bar-fill" style="width:${pct}%;background:${color}"></div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:2px">${fmtBytes(free)} disponível</div>
+    </div>
+    ${rows ? `<div class="storage-breakdown">${rows}</div>` : ''}
+    ${tip}`;
 }
 
 function closeProfilePanel() {

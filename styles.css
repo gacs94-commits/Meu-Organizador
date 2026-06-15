@@ -26,7 +26,8 @@
   --shadow-md:0 4px 24px rgba(0,0,0,.5);
 }
 
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;transition:background .2s,color .2s}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;transition:background .2s,color .2s;
+  padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right);-webkit-text-size-adjust:100%}
 
 /* SIDEBAR */
 .sidebar{width:var(--sidebar-w);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:50;transition:width .2s,background .2s,border-color .2s}
@@ -351,18 +352,185 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   .stat-val{font-size:28px}
 }
 
+/* ═══════ TABLET (700-900px) ═══════ */
+@media(max-width:900px) and (min-width:701px){
+  .main{padding:24px 20px}
+  .stats-row{grid-template-columns:repeat(4,1fr);gap:8px}
+  .stat{padding:11px 13px}
+  .stat-val{font-size:20px}
+  .stat-lbl{font-size:10px}
+  .cols-3{grid-template-columns:1fr 1fr}
+  .cols-4{grid-template-columns:1fr 1fr}
+  .toolbar-title{flex:1 1 100%}
+  .search{flex:1;min-width:0;width:auto}
+}
+
+/* ═══════ MOBILE (<=700px) ═══════ */
 @media(max-width:700px){
+  /* Layout base */
   .hamburger{display:flex}
-  .sidebar{transform:translateX(-100%);transition:transform .25s cubic-bezier(.4,0,.2,1),background .2s,border-color .2s}
+  .sidebar{transform:translateX(-100%);transition:transform .25s cubic-bezier(.4,0,.2,1),background .2s,border-color .2s;width:85vw;max-width:280px}
   .sidebar.open{transform:translateX(0);box-shadow:var(--shadow-md)}
-  .main{margin-left:0;padding:56px 14px 32px}
-  .stats-row{grid-template-columns:repeat(2,1fr)}
-  .cols-2,.cols-3,.cols-4{grid-template-columns:1fr}
-  .search{width:130px}
-  .form-row{flex-direction:column}
-  .toolbar{gap:6px}
-  .filters{gap:3px}
-  .fbtn{padding:4px 10px;font-size:11px}
+  .main{margin-left:0;padding:56px 12px 24px}
+  .section{max-width:100%}
+
+  /* Header / Section title */
+  .section-header{margin-bottom:16px}
+  .section-title{font-size:18px;flex-wrap:wrap;gap:8px}
+  .section-title .icon{font-size:20px}
+  .section-desc{font-size:12px;margin-top:3px}
+
+  /* Cards / Forms */
+  .card{padding:14px}
+  .card h3{font-size:11px;margin-bottom:12px}
+  .cols-2,.cols-3,.cols-4{grid-template-columns:1fr;gap:10px}
+  .form-row{flex-direction:column;gap:14px}
+  .form-cover-col,.cover-up{align-self:center}
+  .field input,.field select{padding:10px 12px;font-size:15px;-webkit-appearance:none}
+  .field label{font-size:12px}
+  .form-actions{justify-content:stretch}
+  .form-actions .btn{width:100%;justify-content:center}
+  .btn{padding:10px 16px;font-size:14px;min-height:42px}
+  .btn-sm{padding:6px 12px;min-height:32px}
+
+  /* Stats — 2 columns on mobile, 1 on very narrow */
+  .stats-row{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px}
+  .stat{padding:10px 12px}
+  .stat-lbl{font-size:9px;margin-bottom:3px}
+  .stat-val{font-size:18px}
+
+  /* Toolbar */
+  .toolbar{gap:6px;flex-direction:column;align-items:stretch;margin-bottom:12px}
+  .toolbar-title{flex:none;width:100%;font-size:14px}
+  .search{width:100%;padding:10px 12px;font-size:14px}
+  #fin-month{width:100%}
+  .view-toggle{align-self:flex-start}
+  .filters{width:100%;overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px;-webkit-overflow-scrolling:touch}
+  .filters::-webkit-scrollbar{height:3px}
+  .fbtn{padding:6px 12px;font-size:12px;white-space:nowrap;flex-shrink:0;min-height:32px}
+
+  /* Game/item cards */
+  .item-card{flex-wrap:wrap}
+  .item-thumb{width:48px;height:64px;font-size:18px}
+  .item-inner{padding:10px 12px;gap:8px;flex-wrap:wrap}
+  .item-body{flex:1 1 100%;min-width:0}
+  .item-name{font-size:14px;white-space:normal;line-height:1.3}
+  .item-meta{font-size:11px}
+  .item-note{font-size:11px}
+  .item-actions{flex:1 1 100%;justify-content:flex-end;gap:5px;margin-top:4px;flex-wrap:wrap}
+  .icon-btn{width:36px;height:36px}
+  .icon-btn svg{width:16px;height:16px}
+  .badge{font-size:11px;padding:4px 10px}
+  .price{font-size:14px}
+
+  /* Grid view items */
+  .items-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+  .grid-card{font-size:12px}
+  .grid-name{font-size:12px}
+  .grid-meta{font-size:10px}
+  .grid-actions .icon-btn{height:30px}
+
+  /* Finance items */
+  .fin-item{padding:10px 12px;gap:9px;flex-wrap:wrap}
+  .fin-amount{font-size:14px}
+
+  /* Sub-tabs (Wishlist/Coleção, Extrato/Histórico, etc) */
+  .section > div[style*="display:flex"][style*="gap:6px"]{flex-wrap:wrap;overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+  /* Star picker */
+  .star-picker .star{font-size:22px}
+  .star-picker{flex-wrap:wrap}
+
+  /* Modals */
+  .modal{padding:16px;margin:8px;max-height:92vh;width:calc(100% - 16px)}
+  .modal h3{font-size:14px;margin-bottom:12px}
+  .modal-foot{flex-direction:column-reverse;gap:8px}
+  .modal-foot .btn{width:100%;justify-content:center}
+  .gs-modal{padding:16px;margin:8px;width:calc(100% - 16px)}
+  .gs-search-row{flex-direction:column;gap:8px}
+  .gs-search-row .btn{width:100%;justify-content:center}
+  .gs-result{padding:8px}
+  .gs-result-cover{width:42px;height:56px}
+  .gs-result-name{font-size:12px}
+  .gs-result-meta{font-size:10px}
+
+  /* PDF/Import tables — horizontal scroll */
+  .pdf-preview-wrap{max-height:300px;overflow-x:auto}
+  .pdf-table{font-size:11px;min-width:560px}
+  .pdf-table th,.pdf-table td{padding:6px 8px}
+  .pdf-summary{font-size:11px;gap:10px}
+  .pdf-import-actions{flex-direction:column-reverse;gap:8px}
+  .pdf-import-actions .btn{width:100%;justify-content:center}
+  .pdf-drop-zone{padding:24px 12px}
+  .pdf-drop-zone svg{width:34px;height:34px}
+  .pdf-drop-zone p{font-size:13px}
+  .pdf-drop-zone small{font-size:11px}
+
+  /* Investments */
+  .inv-result-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .inv-stat{padding:12px}
+  .inv-stat-val{font-size:17px}
+  .inv-bar-card,.inv-table-card{padding:14px}
+  .inv-bar-label{width:80px;font-size:11px}
+  .inv-bar-val{width:75px;font-size:11px}
+  .inv-table{font-size:11px;min-width:auto}
+  .inv-table th,.inv-table td{padding:6px 8px}
+
+  /* History month cards */
+  .month-header{flex-wrap:wrap;gap:8px;padding:12px}
+  .month-stats{flex:1 1 100%;justify-content:space-between;gap:8px}
+  .month-stat{flex:1;text-align:center}
+  .month-stat-val{font-size:12px}
+  .month-stat-lbl{font-size:9px}
+  .month-name{font-size:13px}
+  .month-bar{grid-template-columns:1fr;gap:0}
+  .month-bar-item{padding:9px 12px;border-right:none !important;border-bottom:1px solid var(--border)}
+  .month-bar-item:last-child{border-bottom:none}
+
+  /* Profile button & panel */
+  .profile-btn{top:10px;right:10px;padding:3px 10px 3px 3px;gap:6px}
+  .profile-avatar{width:30px;height:30px;font-size:13px}
+  .profile-name{display:none}
+  .profile-chevron{display:none}
+  .profile-panel{
+    width:calc(100vw - 16px);right:8px;top:56px;
+    max-height:calc(100vh - 70px);overflow-y:auto;
+  }
+  .pp-section{padding:14px 16px}
+  .color-grid{grid-template-columns:repeat(7,1fr);gap:6px}
+
+  /* Type toggle (entrada/saída) */
+  .fin-type-btn{padding:11px 8px;font-size:12px}
+
+  /* Tooltips don't work on touch — disable them, use a tap-friendly approach */
+  .tooltip-box{font-size:11px;width:180px}
+  .tooltip-icon:active .tooltip-box{opacity:1}
+
+  /* Sidebar nav items larger touch targets */
+  .nav-item{padding:11px 12px;font-size:14px}
+
+  /* Income widget */
+  .income-widget{padding:12px 14px}
+  .income-display{padding:10px 12px}
+  .income-amount{font-size:13px}
+
+  /* Cover upload smaller */
+  .cover-up{width:80px;height:107px;font-size:10px}
+}
+
+/* ═══════ EXTRA SMALL MOBILE (<=400px) ═══════ */
+@media(max-width:400px){
+  .main{padding:52px 10px 20px}
+  .card{padding:12px}
+  .section-title{font-size:16px}
+  .stats-row{grid-template-columns:1fr 1fr;gap:6px}
+  .stat-val{font-size:16px}
+  .item-thumb{width:42px;height:56px;font-size:16px}
+  .item-name{font-size:13px}
+  .badge{font-size:10px;padding:3px 8px}
+  .items-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .fbtn{font-size:11px;padding:5px 10px}
+  .icon-btn{width:34px;height:34px}
 }
 
 /* ═══════ PROFILE BUTTON ═══════ */
@@ -452,12 +620,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 }
 .pp-save-btn:hover{background:var(--accent2);box-shadow:var(--glow)}
 
-@media(max-width:700px){
-  .profile-btn{top:10px;right:10px;padding:4px 10px 4px 4px}
-  .profile-name{display:none}
-  .profile-panel{width:calc(100vw - 20px);right:10px}
-}
-
 /* ═══════ PDF IMPORT ═══════ */
 .pdf-drop-zone{
   border:2px dashed var(--border2);border-radius:var(--radius);
@@ -489,3 +651,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 /* IMPORTER TIP */
 .imp-tip{font-size:12px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:12px;line-height:1.5}
+
+/* ═══════ STORAGE INDICATOR ═══════ */
+.storage-bar-wrap{margin-bottom:10px}
+.storage-bar-track{height:8px;background:var(--surface3);border-radius:999px;overflow:hidden;margin:6px 0 4px}
+.storage-bar-fill{height:100%;border-radius:999px;transition:width .5s cubic-bezier(.4,0,.2,1),background .3s}
+.storage-labels{display:flex;justify-content:space-between;font-size:11px;font-weight:600}
+.storage-used{color:var(--text2)}
+.storage-pct{font-weight:700}
+.storage-breakdown{display:flex;flex-direction:column;gap:5px;margin-top:10px}
+.storage-row{display:flex;align-items:center;gap:8px}
+.storage-row-label{font-size:11px;color:var(--text2);width:100px;flex-shrink:0}
+.storage-row-bar{flex:1;height:4px;background:var(--surface3);border-radius:999px;overflow:hidden}
+.storage-row-fill{height:100%;border-radius:999px;background:var(--accent);opacity:.7}
+.storage-row-val{font-size:11px;color:var(--text3);width:44px;text-align:right;flex-shrink:0}
+.storage-tip{font-size:11px;color:var(--amber);margin-top:8px;line-height:1.4}
+.storage-ok{font-size:11px;color:var(--green);margin-top:6px}
