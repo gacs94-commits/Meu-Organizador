@@ -22,6 +22,13 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<div class="mobile-topbar" aria-hidden="true">Meu <strong>Organizador</strong></div>
+<nav class="mobile-bottom-nav" aria-label="Navegação principal no celular">
+  <button type="button" data-section="finance" aria-current="page" onclick="goTo('finance')"><span aria-hidden="true">◈</span>Finanças</button>
+  <button type="button" data-section="health" onclick="goTo('health')"><span aria-hidden="true">♡</span>Saúde</button>
+  <button type="button" data-section="shopping" onclick="goTo('shopping')"><span aria-hidden="true">▤</span>Compras</button>
+  <button type="button" id="mobile-menu" aria-controls="sidebar" aria-expanded="false" onclick="toggleSidebar()"><span aria-hidden="true">☰</span>Mais</button>
+</nav>
 
 <button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Menu">
   <span></span><span></span><span></span>
@@ -852,5 +859,6 @@
 
 <script src="app.js"></script>
 <script src="health.js"></script>
+<script src="mobile.js"></script>
 </body>
 </html>

@@ -1,10 +1,11 @@
-const CACHE_NAME = 'meu-organizador-v5-budget';
+const CACHE_NAME = 'meu-organizador-v6-mobile-final';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
   './health.js',
+  './mobile.js',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',

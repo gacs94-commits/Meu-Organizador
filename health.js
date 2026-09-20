@@ -97,6 +97,7 @@ function editHealthRecord(kind,index) {
   const prefix=kind==='diet'?'hd':'hw';
   for(const key of (kind==='diet'?['date','name','details']:['date','name','sets','reps','weight'])) $(prefix+'-'+key).value=record[key];
   $('health-'+kind+'-heading').textContent=kind==='diet'?'Editar refeição':'Editar exercício';
+  revealMobileForm($(prefix+'-name'));
   $(prefix+'-name').focus();
 }
 function deleteHealthRecord(kind,index) {

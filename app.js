@@ -48,7 +48,11 @@ function goTo(s) {
     document.getElementById('sec-'+id).classList.toggle('active', id===s);
   });
   document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b.getAttribute('onclick')===`goTo('${s}')`));
-  if(window.innerWidth<=700) closeSidebar();
+  document.querySelectorAll('.mobile-bottom-nav [data-section]').forEach(button=>{
+    if(button.dataset.section === s) button.setAttribute('aria-current','page');
+    else button.removeAttribute('aria-current');
+  });
+  if(window.innerWidth<=700) { closeSidebar(); window.scrollTo({top:0,behavior:'instant'}); }
 }
 
 // ═══════ GAMES SUB TABS ═══════
@@ -1625,11 +1629,17 @@ function toggleSidebar() {
   const open = sb.classList.toggle('open');
   hb.classList.toggle('open', open);
   bd.classList.toggle('open', open);
+  hb.setAttribute('aria-expanded',String(open));
+  $('mobile-menu').setAttribute('aria-expanded',String(open));
+  document.body.classList.toggle('mobile-menu-open',open);
 }
 function closeSidebar() {
   $('sidebar').classList.remove('open');
   $('hamburger').classList.remove('open');
   $('sidebar-backdrop').classList.remove('open');
+  $('hamburger').setAttribute('aria-expanded','false');
+  $('mobile-menu').setAttribute('aria-expanded','false');
+  document.body.classList.remove('mobile-menu-open');
 }
 document.querySelectorAll('.overlay').forEach(o=>{
   o.addEventListener('click',e=>{if(e.target===o)closeModal();});
