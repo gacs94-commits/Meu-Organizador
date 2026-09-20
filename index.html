@@ -224,6 +224,12 @@
 
     <!-- WISHLIST -->
     <div id="gpanel-wish">
+      <div class="stats-row" id="w-stats">
+        <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val c-accent" id="w-s1">0</div></div>
+        <div class="stat"><div class="stat-lbl">Custo est.</div><div class="stat-val" id="w-s2" style="font-size:16px;padding-top:4px">R$ 0</div></div>
+        <div class="stat"><div class="stat-lbl">Alta prior.</div><div class="stat-val c-red" id="w-s3">0</div></div>
+        <div class="stat"><div class="stat-lbl">Baixa prior.</div><div class="stat-val c-blue" id="w-s4">0</div></div>
+      </div>
       <div class="card">
         <h3>Adicionar jogo</h3>
         <div class="form-row">
@@ -253,12 +259,7 @@
         </div>
         <div class="form-actions"><button class="btn btn-primary" onclick="addWish()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Adicionar</button></div>
       </div>
-      <div class="stats-row" id="w-stats" style="display:none">
-        <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val c-accent" id="w-s1">0</div></div>
-        <div class="stat"><div class="stat-lbl">Custo est.</div><div class="stat-val" id="w-s2" style="font-size:16px;padding-top:4px">R$ 0</div></div>
-        <div class="stat"><div class="stat-lbl">Alta prior.</div><div class="stat-val c-red" id="w-s3">0</div></div>
-        <div class="stat"><div class="stat-lbl">Baixa prior.</div><div class="stat-val c-blue" id="w-s4">0</div></div>
-      </div>
+
       <div class="toolbar">
         <span class="toolbar-title" id="w-title">Lista de desejos</span>
         <input class="search" id="w-search" placeholder="🔍 Buscar..." oninput="renderWish()"/>
@@ -276,6 +277,12 @@
 
     <!-- COLLECTION -->
     <div id="gpanel-col" style="display:none">
+      <div class="stats-row" id="c-stats">
+        <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val c-accent" id="c-s1">0</div></div>
+        <div class="stat"><div class="stat-lbl">Zerados/Plat.</div><div class="stat-val c-green" id="c-s2">0</div></div>
+        <div class="stat"><div class="stat-lbl">Parei</div><div class="stat-val c-red" id="c-s3">0</div></div>
+        <div class="stat"><div class="stat-lbl">Nota média</div><div class="stat-val" id="c-s4" style="font-size:18px;padding-top:4px">—</div></div>
+      </div>
       <div class="card">
         <h3>Adicionar jogo</h3>
         <div class="form-row">
@@ -316,12 +323,7 @@
         </div>
         <div class="form-actions"><button class="btn btn-primary" onclick="addCol()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Adicionar</button></div>
       </div>
-      <div class="stats-row" id="c-stats" style="display:none">
-        <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val c-accent" id="c-s1">0</div></div>
-        <div class="stat"><div class="stat-lbl">Zerados/Plat.</div><div class="stat-val c-green" id="c-s2">0</div></div>
-        <div class="stat"><div class="stat-lbl">Parei</div><div class="stat-val c-red" id="c-s3">0</div></div>
-        <div class="stat"><div class="stat-lbl">Nota média</div><div class="stat-val" id="c-s4" style="font-size:18px;padding-top:4px">—</div></div>
-      </div>
+
       <div class="toolbar">
         <span class="toolbar-title" id="c-title">Minha coleção</span>
         <input class="search" id="c-search" placeholder="🔍 Buscar..." oninput="renderCol()"/>
@@ -344,6 +346,12 @@
     <div class="section-header">
       <div class="section-title"><span class="icon">🎬</span> Filmes & Séries</div>
       <div class="section-desc">Sua lista de títulos para assistir e assistidos</div>
+    </div>
+    <div class="stats-row" id="mv-stats">
+      <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val c-accent" id="mv-s1">0</div></div>
+      <div class="stat"><div class="stat-lbl">Assistidos</div><div class="stat-val c-green" id="mv-s2">0</div></div>
+      <div class="stat"><div class="stat-lbl">Para ver</div><div class="stat-val c-amber" id="mv-s3">0</div></div>
+      <div class="stat"><div class="stat-lbl">Nota média</div><div class="stat-val c-accent" id="mv-s4">—</div></div>
     </div>
     <div class="card">
       <h3>Adicionar título</h3>
@@ -369,12 +377,7 @@
       </div>
       <div class="form-actions"><button class="btn btn-primary" onclick="addMovie()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Adicionar</button></div>
     </div>
-    <div class="stats-row" id="mv-stats" style="display:none">
-      <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val c-accent" id="mv-s1">0</div></div>
-      <div class="stat"><div class="stat-lbl">Assistidos</div><div class="stat-val c-green" id="mv-s2">0</div></div>
-      <div class="stat"><div class="stat-lbl">Para ver</div><div class="stat-val c-amber" id="mv-s3">0</div></div>
-      <div class="stat"><div class="stat-lbl">Nota média</div><div class="stat-val c-accent" id="mv-s4">—</div></div>
-    </div>
+
     <div class="toolbar">
       <span class="toolbar-title" id="mv-title">Filmes & Séries</span>
       <input class="search" id="mv-search" placeholder="🔍 Buscar..." oninput="renderMovies()"/>
@@ -394,6 +397,12 @@
     <div class="section-header">
       <div class="section-title"><span class="icon">📚</span> Livros</div>
       <div class="section-desc">Sua estante virtual de leituras</div>
+    </div>
+    <div class="stats-row" id="bk-stats">
+      <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val c-accent" id="bk-s1">0</div></div>
+      <div class="stat"><div class="stat-lbl">Lidos</div><div class="stat-val c-green" id="bk-s2">0</div></div>
+      <div class="stat"><div class="stat-lbl">Para ler</div><div class="stat-val c-amber" id="bk-s3">0</div></div>
+      <div class="stat"><div class="stat-lbl">Nota média</div><div class="stat-val c-accent" id="bk-s4">—</div></div>
     </div>
     <div class="card">
       <h3>Adicionar livro</h3>
@@ -419,12 +428,7 @@
       </div>
       <div class="form-actions"><button class="btn btn-primary" onclick="addBook()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Adicionar</button></div>
     </div>
-    <div class="stats-row" id="bk-stats" style="display:none">
-      <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val c-accent" id="bk-s1">0</div></div>
-      <div class="stat"><div class="stat-lbl">Lidos</div><div class="stat-val c-green" id="bk-s2">0</div></div>
-      <div class="stat"><div class="stat-lbl">Para ler</div><div class="stat-val c-amber" id="bk-s3">0</div></div>
-      <div class="stat"><div class="stat-lbl">Nota média</div><div class="stat-val c-accent" id="bk-s4">—</div></div>
-    </div>
+
     <div class="toolbar">
       <span class="toolbar-title" id="bk-title">Livros</span>
       <input class="search" id="bk-search" placeholder="🔍 Buscar..." oninput="renderBooks()"/>
@@ -455,6 +459,13 @@
 
     <!-- EXTRATO PANEL -->
     <div id="fpanel-extrato">
+    <div class="stats-row" id="fin-stats">
+      <div class="stat"><div class="stat-lbl">Saldo atual</div><div class="stat-val" id="fin-s1">R$ 0</div></div>
+      <div class="stat"><div class="stat-lbl">Total entradas</div><div class="stat-val c-red" id="fin-s2">R$ 0</div></div>
+      <div class="stat"><div class="stat-lbl">Total saídas</div><div class="stat-val c-accent" id="fin-s3">R$ 0</div></div>
+      <div class="stat"><div class="stat-lbl">Transações</div><div class="stat-val c-accent" id="fin-s4">0</div></div>
+    </div>
+    <div class="fin-budget-help"><p id="fin-budget-note"></p><button class="btn btn-secondary btn-sm" onclick="editIncome(); if(window.innerWidth<=700) toggleSidebar();">Definir / editar renda</button></div>
     <div class="card">
       <h3>Registrar transação</h3>
       <div style="margin-bottom:12px">
@@ -477,12 +488,7 @@
       </div>
       <div class="form-actions"><button class="btn btn-primary" onclick="addFinance()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Registrar</button></div>
     </div>
-    <div class="stats-row" id="fin-stats" style="display:none">
-      <div class="stat"><div class="stat-lbl">Saldo atual</div><div class="stat-val" id="fin-s1">R$ 0</div></div>
-      <div class="stat"><div class="stat-lbl">Total entradas</div><div class="stat-val c-green" id="fin-s2">R$ 0</div></div>
-      <div class="stat"><div class="stat-lbl">Total saídas</div><div class="stat-val c-red" id="fin-s3">R$ 0</div></div>
-      <div class="stat"><div class="stat-lbl">Transações</div><div class="stat-val c-accent" id="fin-s4">0</div></div>
-    </div>
+
     <div class="toolbar" style="flex-wrap:wrap;gap:8px">
       <span class="toolbar-title" id="fin-title">Extrato</span>
       <select id="fin-month" onchange="renderFinance()" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--surface);color:var(--text);cursor:pointer">
@@ -510,6 +516,12 @@
       <div class="section-title"><span class="icon">🛒</span> Lista de Compras</div>
       <div class="section-desc">Itens para comprar com controle de preço</div>
     </div>
+    <div class="stats-row" id="sh-stats">
+      <div class="stat"><div class="stat-lbl">Total itens</div><div class="stat-val c-accent" id="sh-s1">0</div></div>
+      <div class="stat"><div class="stat-lbl">Comprados</div><div class="stat-val c-green" id="sh-s2">0</div></div>
+      <div class="stat"><div class="stat-lbl">Pendentes</div><div class="stat-val c-amber" id="sh-s3">0</div></div>
+      <div class="stat"><div class="stat-lbl">Total est.</div><div class="stat-val" id="sh-s4" style="font-size:16px;padding-top:4px">R$ 0</div></div>
+    </div>
     <div class="card">
       <h3>Adicionar item</h3>
       <div class="form-grid cols-4">
@@ -525,12 +537,7 @@
       </div>
       <div class="form-actions"><button class="btn btn-primary" onclick="addShopping()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Adicionar</button></div>
     </div>
-    <div class="stats-row" id="sh-stats" style="display:none">
-      <div class="stat"><div class="stat-lbl">Total itens</div><div class="stat-val c-accent" id="sh-s1">0</div></div>
-      <div class="stat"><div class="stat-lbl">Comprados</div><div class="stat-val c-green" id="sh-s2">0</div></div>
-      <div class="stat"><div class="stat-lbl">Pendentes</div><div class="stat-val c-amber" id="sh-s3">0</div></div>
-      <div class="stat"><div class="stat-lbl">Total est.</div><div class="stat-val" id="sh-s4" style="font-size:16px;padding-top:4px">R$ 0</div></div>
-    </div>
+
     <div class="toolbar">
       <span class="toolbar-title" id="sh-title">Lista de compras</span>
       <input class="search" id="sh-search" placeholder="🔍 Buscar..." oninput="renderShopping()"/>
@@ -548,6 +555,12 @@
     <div class="section-header">
       <div class="section-title"><span class="icon">📦</span> Outros Itens</div>
       <div class="section-desc">Eletrônicos, roupas, gadgets e tudo mais</div>
+    </div>
+    <div class="stats-row" id="ot-stats">
+      <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val c-accent" id="ot-s1">0</div></div>
+      <div class="stat"><div class="stat-lbl">Tenho</div><div class="stat-val c-green" id="ot-s2">0</div></div>
+      <div class="stat"><div class="stat-lbl">Quero</div><div class="stat-val c-amber" id="ot-s3">0</div></div>
+      <div class="stat"><div class="stat-lbl">Custo est.</div><div class="stat-val" id="ot-s4" style="font-size:16px;padding-top:4px">R$ 0</div></div>
     </div>
     <div class="card">
       <h3>Adicionar item</h3>
@@ -568,12 +581,7 @@
       </div>
       <div class="form-actions"><button class="btn btn-primary" onclick="addOther()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Adicionar</button></div>
     </div>
-    <div class="stats-row" id="ot-stats" style="display:none">
-      <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val c-accent" id="ot-s1">0</div></div>
-      <div class="stat"><div class="stat-lbl">Tenho</div><div class="stat-val c-green" id="ot-s2">0</div></div>
-      <div class="stat"><div class="stat-lbl">Quero</div><div class="stat-val c-amber" id="ot-s3">0</div></div>
-      <div class="stat"><div class="stat-lbl">Custo est.</div><div class="stat-val" id="ot-s4" style="font-size:16px;padding-top:4px">R$ 0</div></div>
-    </div>
+
     <div class="toolbar">
       <span class="toolbar-title" id="ot-title">Outros itens</span>
       <input class="search" id="ot-search" placeholder="🔍 Buscar..." oninput="renderOthers()"/>
@@ -591,6 +599,12 @@
     <div class="section-header">
       <div class="section-title"><span class="icon">🎯</span> Metas Pessoais</div>
       <div class="section-desc">Acompanhe seus objetivos com barra de progresso</div>
+    </div>
+    <div class="stats-row" id="gl-stats">
+      <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val c-accent" id="gl-s1">0</div></div>
+      <div class="stat"><div class="stat-lbl">Ativas</div><div class="stat-val c-amber" id="gl-s2">0</div></div>
+      <div class="stat"><div class="stat-lbl">Concluídas</div><div class="stat-val c-green" id="gl-s3">0</div></div>
+      <div class="stat"><div class="stat-lbl">Pausadas</div><div class="stat-val c-blue" id="gl-s4">0</div></div>
     </div>
     <div class="card">
       <h3>Nova meta</h3>
@@ -612,12 +626,7 @@
       </div>
       <div class="form-actions"><button class="btn btn-primary" onclick="addGoal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Criar meta</button></div>
     </div>
-    <div class="stats-row" id="gl-stats" style="display:none">
-      <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val c-accent" id="gl-s1">0</div></div>
-      <div class="stat"><div class="stat-lbl">Ativas</div><div class="stat-val c-amber" id="gl-s2">0</div></div>
-      <div class="stat"><div class="stat-lbl">Concluídas</div><div class="stat-val c-green" id="gl-s3">0</div></div>
-      <div class="stat"><div class="stat-lbl">Pausadas</div><div class="stat-val c-blue" id="gl-s4">0</div></div>
-    </div>
+
     <div class="toolbar">
       <span class="toolbar-title" id="gl-title">Metas</span>
       <input class="search" id="gl-search" placeholder="🔍 Buscar..." oninput="renderGoals()"/>

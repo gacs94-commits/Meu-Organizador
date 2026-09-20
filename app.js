@@ -268,13 +268,13 @@ function renderWish() {
   let list = F.w==='all'?[...D.wish]:D.wish.filter(g=>g.priority===F.w);
   if(s) list=list.filter(g=>g.name.toLowerCase().includes(s)||(g.genre||'').toLowerCase().includes(s));
   const st=$('w-stats');
-  if(D.wish.length){
+  {
     st.style.display='grid';
     $('w-s1').textContent=D.wish.length;
     $('w-s2').textContent=fp(D.wish.reduce((a,g)=>a+g.price,0));
     $('w-s3').textContent=D.wish.filter(g=>g.priority==='alta').length;
     $('w-s4').textContent=D.wish.filter(g=>g.priority==='baixa').length;
-  } else st.style.display='none';
+  }
   $('w-title').textContent=`Wishlist (${D.wish.length})`;
   const wTotal = D.wish.reduce((a,g)=>a+g.price,0);
   $('w-insight').innerHTML = (income && wTotal>0)
@@ -288,14 +288,14 @@ function renderCol() {
   let list = F.c==='all'?[...D.col]:D.col.filter(g=>g.played===F.c);
   if(s) list=list.filter(g=>g.name.toLowerCase().includes(s)||(g.genre||'').toLowerCase().includes(s));
   const st=$('c-stats');
-  if(D.col.length){
+  {
     st.style.display='grid';
     $('c-s1').textContent=D.col.length;
     $('c-s2').textContent=D.col.filter(g=>g.played==='zerado'||g.played==='platinado').length;
     $('c-s3').textContent=D.col.filter(g=>g.played==='parei').length;
     const rated=D.col.filter(g=>g.rating>0);
     $('c-s4').textContent=rated.length?'★ '+(rated.reduce((a,g)=>a+g.rating,0)/rated.length).toFixed(1):'—';
-  } else st.style.display='none';
+  }
   $('c-title').textContent=`Coleção (${D.col.length})`;
   renderGamesList('c-list', list, 'col', V.c);
 }
@@ -398,14 +398,14 @@ function renderMovies() {
   let list = F.mv==='all'?[...D.mv]:D.mv.filter(m=>m.status===F.mv);
   if(s) list=list.filter(m=>m.name.toLowerCase().includes(s)||(m.genre||'').toLowerCase().includes(s));
   const st=$('mv-stats');
-  if(D.mv.length){
+  {
     st.style.display='grid';
     $('mv-s1').textContent=D.mv.length;
     $('mv-s2').textContent=D.mv.filter(m=>m.status==='assistido').length;
     $('mv-s3').textContent=D.mv.filter(m=>m.status==='quero').length;
     const scored=D.mv.filter(m=>m.score>0);
     $('mv-s4').textContent=scored.length?(scored.reduce((a,m)=>a+m.score,0)/scored.length).toFixed(1)+'⭐':'—';
-  } else st.style.display='none';
+  }
   $('mv-title').textContent=`Filmes & Séries (${D.mv.length})`;
   const el=$('mv-list');
   if(!list.length){el.innerHTML=emptyHTML('Nenhum título adicionado ainda.');return;}
@@ -460,14 +460,14 @@ function renderBooks() {
   let list = F.bk==='all'?[...D.bk]:D.bk.filter(b=>b.status===F.bk);
   if(s) list=list.filter(b=>b.name.toLowerCase().includes(s)||(b.author||'').toLowerCase().includes(s));
   const st=$('bk-stats');
-  if(D.bk.length){
+  {
     st.style.display='grid';
     $('bk-s1').textContent=D.bk.length;
     $('bk-s2').textContent=D.bk.filter(b=>b.status==='lido').length;
     $('bk-s3').textContent=D.bk.filter(b=>b.status==='quero').length;
     const scored=D.bk.filter(b=>b.score>0);
     $('bk-s4').textContent=scored.length?(scored.reduce((a,b)=>a+b.score,0)/scored.length).toFixed(1)+'⭐':'—';
-  } else st.style.display='none';
+  }
   $('bk-title').textContent=`Livros (${D.bk.length})`;
   const el=$('bk-list');
   if(!list.length){el.innerHTML=emptyHTML('Nenhum livro adicionado ainda.');return;}
@@ -669,28 +669,23 @@ function renderFinance() {
   if(s)               list = list.filter(f=>f.desc.toLowerCase().includes(s)||(f.cat||'').toLowerCase().includes(s));
   list.sort((a,b)=>b.date.localeCompare(a.date));
 
-  // Stats reflect selected month (or all time)
-  const statBase = selMonth ? D.fin.filter(f=>(f.date||'').startsWith(selMonth)) : D.fin;
-  const st = $('fin-stats');
-  if(D.fin.length || selMonth) {
-    st.style.display = 'grid';
-    const entradas = statBase.filter(f=>f.type==='entrada').reduce((a,f)=>a+f.val,0);
-    const saidas   = statBase.filter(f=>f.type==='saida').reduce((a,f)=>a+f.val,0);
-    const saldo    = entradas - saidas;
-    $('fin-s1').textContent = fp(saldo);
-    $('fin-s1').style.color = saldo>=0?'var(--green)':'var(--red)';
-    $('fin-s2').textContent = fp(entradas);
-    $('fin-s3').textContent = fp(saidas);
-    $('fin-s4').textContent = statBase.length;
-    // Update stat labels to show which period
-    const periodLbl = selMonth
-      ? `${MONTHS_PT[parseInt(selMonth.split('-')[1])-1]} ${selMonth.split('-')[0]}`
-      : 'Todo período';
-    document.querySelectorAll('#fin-stats .stat-lbl').forEach((el,i) => {
-      const base = ['Saldo','Entradas','Saídas','Transações'][i];
-      el.textContent = `${base} · ${periodLbl}`;
-    });
-  } else st.style.display='none';
+  // A monthly budget must never subtract all-time spending from one month's income.
+  const budgetMonth = selMonth || currentMonth;
+  const statBase = D.fin.filter(f=>(f.date||'').startsWith(budgetMonth));
+  const spent = statBase.filter(f=>f.type==='saida').reduce((total,f)=>total+f.val,0);
+  const available = income - spent;
+  const periodLbl = `${MONTHS_PT[parseInt(budgetMonth.split('-')[1])-1]} ${budgetMonth.split('-')[0]}`;
+  $('fin-s1').textContent = income > 0 ? fp(available) : 'Defina sua renda';
+  $('fin-s1').style.color = income > 0 && available < 0 ? 'var(--red)' : 'var(--green)';
+  $('fin-s2').textContent = fp(spent);
+  $('fin-s3').textContent = income > 0 ? fp(income) : 'Não definida';
+  $('fin-s4').textContent = statBase.length;
+  const budgetLabels = [available < 0 && income > 0 ? 'Orçamento excedido' : 'Disponível para gastar','Já gastei','Renda mensal','Transações'];
+  document.querySelectorAll('#fin-stats .stat-lbl').forEach((el,i)=>{
+    el.textContent = `${budgetLabels[i]} · ${periodLbl}`;
+  });
+  $('fin-budget-note').textContent = (selMonth ? '' : 'Os indicadores mostram o mês atual; o extrato abaixo mostra todos os meses. ') +
+    (income > 0 ? 'Disponível = renda mensal cadastrada − saídas do mês. As entradas do extrato não são somadas novamente à renda.' : 'Cadastre sua renda mensal para calcular quanto ainda pode gastar.');
 
   // Title
   const monthLabel = selMonth
@@ -816,13 +811,13 @@ function renderShopping() {
   let list = F.sh==='all'?[...D.sh]:F.sh==='done'?D.sh.filter(i=>i.done):D.sh.filter(i=>!i.done);
   if(s) list=list.filter(i=>i.name.toLowerCase().includes(s));
   const st=$('sh-stats');
-  if(D.sh.length){
+  {
     st.style.display='grid';
     $('sh-s1').textContent=D.sh.length;
     $('sh-s2').textContent=D.sh.filter(i=>i.done).length;
     $('sh-s3').textContent=D.sh.filter(i=>!i.done).length;
     $('sh-s4').textContent=fp(D.sh.reduce((a,i)=>a+i.price*i.qty,0));
-  } else st.style.display='none';
+  }
   $('sh-title').textContent=`Lista de compras (${D.sh.length})`;
   const el=$('sh-list');
   if(!list.length){el.innerHTML=emptyHTML('Nenhum item na lista.');return;}
@@ -868,13 +863,13 @@ function renderOthers() {
   let list = F.ot==='all'?[...D.ot]:D.ot.filter(o=>o.status===F.ot);
   if(s) list=list.filter(o=>o.name.toLowerCase().includes(s)||(o.cat||'').toLowerCase().includes(s));
   const st=$('ot-stats');
-  if(D.ot.length){
+  {
     st.style.display='grid';
     $('ot-s1').textContent=D.ot.length;
     $('ot-s2').textContent=D.ot.filter(o=>o.status==='tenho').length;
     $('ot-s3').textContent=D.ot.filter(o=>o.status==='quero').length;
     $('ot-s4').textContent=fp(D.ot.filter(o=>o.status==='quero').reduce((a,o)=>a+o.price,0));
-  } else st.style.display='none';
+  }
   $('ot-title').textContent=`Outros itens (${D.ot.length})`;
   const catEmoji=c=>({Eletrônicos:'💻',Roupas:'👕',Calçados:'👟',Casa:'🏠',Esportes:'⚽',Acessórios:'💍'}[c]||'📦');
   const el=$('ot-list');
@@ -923,13 +918,13 @@ function renderGoals() {
   let list = F.gl==='all'?[...D.gl]:D.gl.filter(g=>g.status===F.gl);
   if(s) list=list.filter(g=>g.name.toLowerCase().includes(s));
   const st=$('gl-stats');
-  if(D.gl.length){
+  {
     st.style.display='grid';
     $('gl-s1').textContent=D.gl.length;
     $('gl-s2').textContent=D.gl.filter(g=>g.status==='ativa').length;
     $('gl-s3').textContent=D.gl.filter(g=>g.status==='concluida').length;
     $('gl-s4').textContent=D.gl.filter(g=>g.status==='pausada').length;
-  } else st.style.display='none';
+  }
   $('gl-title').textContent=`Metas (${D.gl.length})`;
   const glStatusLbl=s=>({ativa:'🔥 Ativa',pausada:'⏸️ Pausada',concluida:'✅ Concluída'}[s]||s);
   const glStatusCls=s=>({ativa:'badge-amber',pausada:'badge-gray',concluida:'badge-green'}[s]||'badge-gray');
