@@ -1,9 +1,10 @@
-const CACHE_NAME = 'meu-organizador-v1';
+const CACHE_NAME = 'meu-organizador-v3-health-month';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './app.js',
+  './health.js',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',

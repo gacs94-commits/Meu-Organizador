@@ -1,5 +1,8 @@
 // ═══════ DATA ═══════
 const D = {
+  attendance: JSON.parse(localStorage.getItem('hub_attendance')||'[]'),
+  diet: JSON.parse(localStorage.getItem('hub_diet')||'[]'),
+  workout: JSON.parse(localStorage.getItem('hub_workout')||'[]'),
   wish: JSON.parse(localStorage.getItem('hub_wish')||'[]'),
   col:  JSON.parse(localStorage.getItem('hub_col')||'[]'),
   mv:   JSON.parse(localStorage.getItem('hub_mv')||'[]'),
@@ -39,7 +42,7 @@ function toggleTheme() { dark=!dark; applyTheme(); }
 applyTheme();
 
 // ═══════ NAV ═══════
-const secs = ['games','movies','books','finance','shopping','others','goals','invest'];
+const secs = ['games','movies','books','finance','shopping','others','goals','invest','health'];
 function goTo(s) {
   secs.forEach(id => {
     document.getElementById('sec-'+id).classList.toggle('active', id===s);
@@ -1247,7 +1250,8 @@ function importBackup(input) {
         input.value = ''; return;
       }
       // Restore all data
-      const keys = ['wish','col','mv','bk','fin','sh','ot','gl'];
+      const keys = ['wish','col','mv','bk','fin','sh','ot','gl','attendance','diet','workout'];
+      validateHealthBackup(backup.data);
       keys.forEach(k => {
         if(backup.data[k]) {
           D[k] = backup.data[k];
@@ -1262,6 +1266,7 @@ function importBackup(input) {
       renderIncomeWidget();
       renderWish(); renderCol(); renderMovies(); renderBooks();
       renderFinance(); renderShopping(); renderOthers(); renderGoals();
+      resetHealthForm('diet'); resetHealthForm('workout'); renderHealth();
       input.value = '';
       toast('✅ Backup importado com sucesso!');
     } catch(err) {
@@ -1833,6 +1838,7 @@ function getStorageUsage() {
     hub_mv:'Filmes & Séries',   hub_bk:'Livros',
     hub_fin:'Financeiro',       hub_sh:'Lista de compras',
     hub_ot:'Outros itens',      hub_gl:'Metas',
+    hub_attendance:'Saúde: presença', hub_diet:'Saúde: dieta', hub_workout:'Saúde: treinos',
     hub_profile:'Perfil',       hub_income:'Renda',
   };
   const breakdown = [];

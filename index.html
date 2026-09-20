@@ -119,6 +119,10 @@
     </button>
 
     <div class="nav-section">Pessoal</div>
+    <button class="nav-item" onclick="goTo('health')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8L12 21l8.8-8.6a5.5 5.5 0 0 0 0-7.8z"/></svg>
+      Saúde
+    </button>
     <button class="nav-item" onclick="goTo('goals')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
       Metas
@@ -151,6 +155,59 @@
 
 <!-- MAIN -->
 <main class="main">
+  <section class="section" id="sec-health">
+    <div class="section-header">
+      <div class="section-title"><span class="icon">💚</span> Saúde</div>
+      <div class="section-desc">Sua rotina de academia, alimentação e treinos em um só lugar.</div>
+    </div>
+    <div class="health-tabs" aria-label="Áreas de saúde">
+      <button class="fbtn active" id="htab-attendance" onclick="healthTab('attendance')" aria-pressed="true">✓ Presença</button>
+      <button class="fbtn" id="htab-diet" onclick="healthTab('diet')" aria-pressed="false">🥗 Dieta</button>
+      <button class="fbtn" id="htab-workout" onclick="healthTab('workout')" aria-pressed="false">🏋️ Treinos</button>
+    </div>
+    <div id="hpanel-attendance" class="card">
+      <h3>Dias de academia</h3>
+      <p class="health-hint">Marque o quadrado de cada dia em que você foi. Toque novamente para desmarcar.</p>
+      <div class="health-month-nav">
+        <div class="field"><label for="health-month-select">Mês</label><select id="health-month-select" onchange="selectHealthMonth()">
+          <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option><option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option><option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option><option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
+        </select></div>
+        <div class="field"><label for="health-year-select">Ano</label><input id="health-year-select" type="number" min="1000" max="9999" step="1" required inputmode="numeric" onchange="selectHealthMonth()" onkeydown="if(event.key==='Enter'){event.preventDefault();selectHealthMonth();}"></div>
+      </div>
+      <div class="health-calendar" id="health-calendar"></div>
+      <p class="health-summary" id="health-summary" aria-live="polite"></p>
+    </div>
+    <div id="hpanel-diet" hidden>
+      <form class="card" id="health-diet-form" onsubmit="saveHealthRecord(event,'diet')">
+        <h3 id="health-diet-heading">Registrar refeição</h3>
+        <div class="form-grid cols-2">
+          <div class="field"><label for="hd-date">Data *</label><input type="date" id="hd-date" required></div>
+          <div class="field"><label for="hd-name">Refeição *</label><input id="hd-name" maxlength="100" placeholder="Ex.: Café da manhã" required></div>
+        </div>
+        <div class="field health-details"><label for="hd-details">Alimentos e quantidades *</label><textarea id="hd-details" rows="4" maxlength="4000" placeholder="Ex.: 2 ovos, 1 fatia de pão e 1 banana" required></textarea></div>
+        <div class="form-actions"><button class="btn btn-secondary" type="button" onclick="resetHealthForm('diet')">Limpar / cancelar</button><button class="btn btn-primary" type="submit">Salvar refeição</button></div>
+      </form>
+      <div id="health-diet-list"></div>
+    </div>
+    <div id="hpanel-workout" hidden>
+      <form class="card" id="health-workout-form" onsubmit="saveHealthRecord(event,'workout')">
+        <h3 id="health-workout-heading">Registrar exercício</h3>
+        <div class="form-grid cols-2">
+          <div class="field"><label for="hw-date">Data do treino *</label><input type="date" id="hw-date" required></div>
+          <div class="field"><label for="hw-name">Exercício *</label><input id="hw-name" maxlength="120" placeholder="Ex.: Supino reto" required></div>
+        </div>
+        <div class="form-grid cols-3 health-details">
+          <div class="field"><label for="hw-sets">Séries *</label><input type="number" id="hw-sets" min="1" max="100" step="1" value="3" required></div>
+          <div class="field"><label for="hw-reps">Repetições por série *</label><input type="number" id="hw-reps" min="1" max="10000" step="1" placeholder="12" required></div>
+          <div class="field"><label for="hw-weight">Peso (kg) *</label><input type="number" id="hw-weight" min="0" max="10000" step="0.01" placeholder="20" required></div>
+        </div>
+        <p class="health-hint">Use 0 kg para exercícios sem carga adicional. A presença é marcada separadamente no calendário.</p>
+        <div class="form-actions"><button class="btn btn-secondary" type="button" onclick="resetHealthForm('workout')">Limpar / cancelar</button><button class="btn btn-primary" type="submit">Salvar exercício</button></div>
+      </form>
+      <div id="health-workout-list"></div>
+    </div>
+  </section>
+
 
   <!-- ===== JOGOS ===== -->
   <div class="section" id="sec-games">
@@ -785,5 +842,6 @@
 </div>
 
 <script src="app.js"></script>
+<script src="health.js"></script>
 </body>
 </html>
