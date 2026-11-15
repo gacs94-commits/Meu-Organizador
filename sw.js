@@ -1,4 +1,4 @@
-const CACHE_NAME = 'meu-organizador-v8-finance-layout';
+const CACHE_NAME = 'meu-organizador-v9-monthly-chart';
 const ASSETS = [
   './',
   './index.html',

@@ -804,3 +804,27 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .finance-manual[open] summary{padding-bottom:14px;border-bottom:1px solid var(--border)}
 @media(max-width:1000px){.finance-import-card{align-items:flex-start;flex-direction:column;gap:18px}}
 @media(max-width:600px){.finance-import-card{padding:20px;border-radius:12px}.finance-import-card h2{font-size:21px}.finance-import-card>.btn{width:100%;justify-content:center}.finance-summary-heading{flex-direction:column;align-items:stretch}.finance-period select{width:100%}#fin-categories{grid-template-columns:1fr}#sec-finance #fin-stats .stat-val{font-size:21px}.finance-manual summary span{margin-left:0}}
+
+/* Compact monthly history with a shared scale for every bar. */
+.finance-history-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:16px}
+.finance-history-heading h3{margin-bottom:6px}
+.finance-history-heading p{font-size:13px;color:var(--text2)}
+.finance-history-total{text-align:right;flex-shrink:0}
+.finance-history-total span{display:block;font-size:11px;color:var(--text2);margin-bottom:5px}
+.finance-history-total strong{font-size:24px;color:var(--accent);letter-spacing:-.5px}
+.finance-month-chart{margin-top:12px}
+.finance-month{padding:20px 0;border-bottom:1px solid var(--border)}
+.finance-month:last-child{border-bottom:0}
+.finance-month-label,.finance-month-footer{display:flex;justify-content:space-between;align-items:center;gap:14px}
+.finance-month-label{font-size:14px;font-weight:600;margin-bottom:10px}
+.finance-month-label strong{font-size:17px;white-space:nowrap}
+.finance-month progress{display:block;appearance:none;width:100%;height:14px;border:0;border-radius:8px;overflow:hidden;background:var(--surface3);color:var(--accent)}
+.finance-month progress::-webkit-progress-bar{background:var(--surface3);border-radius:8px}
+.finance-month progress::-webkit-progress-value{background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:8px}
+.finance-month progress::-moz-progress-bar{background:var(--accent);border-radius:8px}
+.finance-month-footer{margin-top:8px;font-size:11px;color:var(--text2)}
+.finance-month-link{font:inherit;font-weight:600;border:0;background:none;color:var(--accent);cursor:pointer;padding:7px 0;min-height:32px}
+.finance-month-link:hover{text-decoration:underline}
+.finance-month-link:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:3px}
+.finance-history-note{margin-top:14px}
+@media(max-width:600px){.finance-history-heading{flex-direction:column;gap:16px}.finance-history-total{text-align:left}.finance-month-label{font-size:13px;align-items:flex-start}.finance-month-label strong{font-size:15px}.finance-month-footer{gap:8px}.finance-month-link{min-height:44px}.finance-history{padding:18px}}

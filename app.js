@@ -515,108 +515,54 @@ function finTab(t) {
 
 function renderFinHistory() {
   const el = $('fin-history');
-  if(!D.fin.length) { el.innerHTML = emptyHTML('Nenhuma transação registrada ainda.<br>Importe uma fatura para ver o histórico.'); return; }
-
-  const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-
-  // Group transactions by YYYY-MM
-  const groups = {};
+  const months = new Map();
   D.fin.forEach(f => {
-    const key = (f.date||'0000-00').slice(0,7);
-    if(!groups[key]) groups[key] = [];
-    groups[key].push(f);
-  });
-
-  // Sort months descending
-  const sorted = Object.keys(groups).sort((a,b)=>b.localeCompare(a));
-
-  // Accumulate running balance for each month (oldest to newest)
-  const monthBalances = {};
-  let running = 0;
-  sorted.slice().reverse().forEach(key => {
-    groups[key].forEach(f => { running += f.type==='entrada' ? f.val : -f.val; });
-    monthBalances[key] = running;
-  });
-
-  const chevronSVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>`;
-
-  el.innerHTML = sorted.map((key, idx) => {
-    const txs = groups[key].slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-    const entradas = txs.filter(f=>f.type==='entrada').reduce((a,f)=>a+f.val,0);
-    const saidas   = txs.filter(f=>f.type==='saida').reduce((a,f)=>a+f.val,0);
-    const saldo    = entradas - saidas;
-    const [y,m]    = key.split('-');
-    const monthName = `${MONTHS_PT[parseInt(m)-1]} ${y}`;
-    const isCurrentMonth = key === new Date().toISOString().slice(0,7);
-    const openClass = idx === 0 ? 'open' : '';
-
-    // Spending bar: what % of entradas was spent
-    const spendPct = entradas > 0 ? Math.min(100, Math.round((saidas/entradas)*100)) : 0;
-    const barColor = spendPct > 90 ? 'var(--red)' : spendPct > 70 ? 'var(--amber)' : 'var(--green)';
-
-    // Income comparison
-    let incomeNote = '';
-    if(income) {
-      const pct = Math.round((saidas/income)*100);
-      incomeNote = `<span style="font-size:11px;color:var(--text3);margin-left:6px">${pct}% da renda</span>`;
+    const key = (f.date || '').slice(0,7);
+    if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(key)) return;
+    if(!months.has(key)) months.set(key, { spent:0, count:0 });
+    const month = months.get(key);
+    if(f.type === 'saida' && Number.isFinite(f.val) && f.val > 0) {
+      month.spent += f.val;
+      month.count++;
     }
-
-    return `<div class="month-card ${openClass}" id="mc-${key}">
-      <div class="month-header" onclick="toggleMonth('${key}')">
-        <div>
-          <div class="month-name">${isCurrentMonth?'📍 ':''} ${monthName}</div>
-          <div style="font-size:11px;color:var(--text3);margin-top:2px">${txs.length} transaç${txs.length===1?'ão':'ões'}</div>
-        </div>
-        <div class="month-stats">
-          <div class="month-stat">
-            <div class="month-stat-lbl">Entradas</div>
-            <div class="month-stat-val c-green">+${fp(entradas)}</div>
-          </div>
-          <div class="month-stat">
-            <div class="month-stat-lbl">Saídas</div>
-            <div class="month-stat-val c-red">−${fp(saidas)}</div>
-          </div>
-          <div class="month-stat">
-            <div class="month-stat-lbl">Saldo</div>
-            <div class="month-stat-val" style="color:${saldo>=0?'var(--green)':'var(--red)'}">${saldo>=0?'+':''}${fp(saldo)}</div>
-          </div>
-        </div>
-        <div class="month-chevron">${chevronSVG}</div>
-      </div>
-      <div class="month-body">
-        <div class="month-bar">
-          <div class="month-bar-item"><div class="lbl">Entradas</div><div class="val c-green">${fp(entradas)}</div></div>
-          <div class="month-bar-item"><div class="lbl">Saídas</div><div class="val c-red">${fp(saidas)}${incomeNote}</div></div>
-          <div class="month-bar-item"><div class="lbl">Saldo do mês</div><div class="val" style="color:${saldo>=0?'var(--green)':'var(--red)'}">${fp(saldo)}</div></div>
-        </div>
-        ${entradas>0?`
-        <div style="padding:10px 16px 4px">
-          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:5px">
-            <span>Comprometimento da renda do mês</span><span style="font-weight:700;color:${barColor}">${spendPct}%</span>
-          </div>
-          <div class="month-saldo-bar" style="margin:0 0 10px">
-            <div class="month-saldo-fill" style="width:${spendPct}%;background:${barColor}"></div>
-          </div>
-        </div>`:''}
-        <div class="month-txs">
-          ${txs.map(f=>`
-            <div class="month-tx">
-              <div class="fin-dot ${f.type}" style="flex-shrink:0"></div>
-              <div class="month-tx-body">
-                <div class="month-tx-name">${esc(f.desc)}</div>
-                <div class="month-tx-meta">${[f.cat, f.date?new Date(f.date+'T00:00:00').toLocaleDateString('pt-BR'):'', f.importSource ? 'Importado · '+f.importSource : 'Manual / sem origem'].filter(Boolean).map(esc).join(' · ')}</div>
-              </div>
-              <span class="fin-amount ${f.type}" style="font-size:13px">${f.type==='entrada'?'+':'−'}${fp(f.val)}</span>
-              ${iconBtn('','Remover',DEL_ICO,`delFinance(${f.id});renderFinHistory()`)}
-            </div>`).join('')}
-        </div>
-      </div>
-    </div>`;
-  }).join('');
+  });
+  if(!months.size) {
+    el.innerHTML = emptyHTML('Seu histórico começa com a primeira importação.<br>Os totais de cada mês aparecerão aqui, sem listar cada compra.');
+    return;
+  }
+  const names = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const sorted = [...months].sort(([a],[b])=>b.localeCompare(a));
+  const max = Math.max(...sorted.map(([,m])=>m.spent),1);
+  const total = sorted.reduce((sum,[,m])=>sum+m.spent,0);
+  el.innerHTML = `<div class="card finance-history">
+    <div class="finance-history-heading">
+      <div><h3>Gastos mês a mês</h3><p>Compare seus gastos de um jeito simples.</p></div>
+      <div class="finance-history-total"><span>Total nos meses registrados</span><strong>${fp(total)}</strong></div>
+    </div>
+    <p class="finance-helper">Compras importadas e gastos manuais, agrupados pela data do lançamento. Entradas não são somadas. Os valores refletem os arquivos importados e não o fechamento da fatura.</p>
+    <div class="finance-month-chart" role="list" aria-label="Gastos por mês">
+      ${sorted.map(([key,month])=>{
+        const [year,number] = key.split('-');
+        const label = `${names[Number(number)-1]} ${year}`;
+        return `<div class="finance-month" role="listitem">
+          <div class="finance-month-label"><span>${label}</span><strong>${fp(month.spent)}</strong></div>
+          <progress max="${max}" value="${month.spent}" aria-label="Gastos em ${label}: ${fp(month.spent)}"></progress>
+          <div class="finance-month-footer"><span>${month.count} gasto${month.count===1?'':'s'} registrado${month.count===1?'':'s'}</span><button type="button" class="finance-month-link" onclick="viewFinanceMonth('${key}')" aria-label="Ver lançamentos de ${label}">Ver lançamentos →</button></div>
+        </div>`;
+      }).join('')}
+    </div>
+    <p class="finance-helper finance-history-note">As barras usam a mesma escala: o mês com maior gasto tem a barra mais longa. Meses sem registros não aparecem.</p>
+  </div>`;
 }
 
-function toggleMonth(key) {
-  $('mc-'+key).classList.toggle('open');
+function viewFinanceMonth(key) {
+  finTab('extrato');
+  $('fin-month').value = key;
+  $('fin-search').value = '';
+  F.fin = 'all';
+  document.querySelectorAll('#fpanel-extrato .filters .fbtn').forEach((button,i)=>button.classList.toggle('active',i===0));
+  renderFinance();
+  $('fin-title').scrollIntoView({behavior:'smooth',block:'center'});
 }
 
 // ═══════ FINANCE (original) ═══════
