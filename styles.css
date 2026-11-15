@@ -862,3 +862,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   .sidebar{padding-top:calc(64px + env(safe-area-inset-top));padding-bottom:calc(90px + env(safe-area-inset-bottom))}
   .sidebar-header{padding-left:16px;min-height:0}
 }
+
+
+/* Income privacy is shared by the mobile header and desktop sidebar. */
+.income-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:6px}
+.income-heading .income-lbl{margin-bottom:0}
+.income-privacy{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:32px;height:32px;border:1px solid var(--border);border-radius:8px;background:var(--surface2);color:var(--text2);cursor:pointer}
+.income-privacy svg{width:18px;height:18px}
+.income-privacy:hover{color:var(--accent);border-color:var(--accent-border)}
+.income-privacy:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.income-hidden .income-edit-icon{display:none}
+.income-hidden .income-amount{letter-spacing:3px}
+@media(max-width:700px){
+  .mobile-topbar{padding-left:12px}
+  #income-mobile-slot .income-widget{display:grid;grid-template-columns:minmax(0,1fr) 40px;column-gap:6px;align-items:center;padding:4px 6px 4px 10px;background:var(--accent-light);border:1px solid var(--accent-border);border-radius:12px;box-shadow:var(--shadow);height:54px}
+  #income-mobile-slot .income-heading{display:contents}
+  #income-mobile-slot .income-lbl{grid-column:1;grid-row:1;font-size:9px;line-height:13px;letter-spacing:.6px}
+  #income-mobile-slot .income-display{grid-column:1;grid-row:2;height:28px;min-height:28px;gap:8px;min-width:0}
+  #income-mobile-slot .income-amount{font-size:19px;line-height:26px}
+  #income-mobile-slot .income-amount.empty{font-size:15px}
+  #income-mobile-slot .income-privacy{grid-column:2;grid-row:1 / 3;width:40px;height:44px;border:0;background:var(--surface);border-radius:9px;color:var(--accent)}
+  #income-mobile-slot .income-inline-input{grid-column:1;grid-row:2;min-width:0;width:100%;height:28px;font-size:17px}
+}

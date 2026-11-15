@@ -1098,6 +1098,7 @@ const renders = { w:renderWish, c:renderCol, mv:renderMovies, bk:renderBooks, fi
 
 // ═══════ INCOME ═══════
 let income = parseFloat(localStorage.getItem('hub_income')||'0');
+let incomeHidden = localStorage.getItem('hub_income_hidden') === 'true';
 
 // Use the same income widget in the sidebar on desktop and in the fixed header on mobile.
 const incomeMobileQuery = window.matchMedia('(max-width:700px)');
@@ -1109,7 +1110,16 @@ function placeIncomeWidget() {
 incomeMobileQuery.addEventListener('change',placeIncomeWidget);
 placeIncomeWidget();
 
+function toggleIncomePrivacy() {
+  const input = document.querySelector('#income-widget .income-inline-input');
+  if(input) input.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}));
+  incomeHidden = !incomeHidden;
+  localStorage.setItem('hub_income_hidden',String(incomeHidden));
+  renderIncomeWidget();
+}
+
 function editIncome() {
+  if(incomeHidden) { toast('Toque no olho para mostrar a renda antes de editar.'); return; }
   const existing = document.querySelector('#income-widget .income-inline-input');
   if(existing) { existing.focus(); return; }
   const display = $('income-display');
@@ -1131,7 +1141,7 @@ function editIncome() {
     inp.remove(); display.style.display = '';
     renderIncomeWidget();
     renderWish(); renderFinance(); renderShopping(); renderOthers(); renderGoals();
-    if(income > 0) toast('✅ Renda de ' + fp(income) + ' salva!');
+    toast('✅ Renda mensal salva!');
   };
   inp.addEventListener('blur', confirm);
   inp.addEventListener('keydown', e => {
@@ -1143,6 +1153,20 @@ function editIncome() {
 function renderIncomeWidget() {
   const amtEl   = $('income-amt');
   const barWrap = $('income-bar-wrap');
+  const privacyLabel = incomeHidden ? 'Mostrar renda mensal' : 'Ocultar renda mensal';
+  $('income-privacy').setAttribute('aria-label',privacyLabel);
+  $('income-privacy').setAttribute('title',privacyLabel);
+  $('income-privacy').setAttribute('aria-pressed',String(incomeHidden));
+  $('income-eye-slash').style.display = incomeHidden ? '' : 'none';
+  $('income-display').setAttribute('aria-label',incomeHidden ? 'Renda mensal oculta' : 'Editar renda mensal');
+  $('income-display').title = incomeHidden ? 'Renda mensal oculta' : 'Clique para editar';
+  $('income-widget').classList.toggle('income-hidden',incomeHidden);
+  if(incomeHidden) {
+    amtEl.textContent = '••••••';
+    amtEl.className = 'income-amount';
+    barWrap.style.display = 'none';
+    return;
+  }
   if(!income) {
     amtEl.textContent = 'Definir renda...';
     amtEl.className   = 'income-amount empty';

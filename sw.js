@@ -1,4 +1,4 @@
-const CACHE_NAME = 'meu-organizador-v12-header-income';
+const CACHE_NAME = 'meu-organizador-v13-income-privacy';
 const ASSETS = [
   './',
   './index.html',
