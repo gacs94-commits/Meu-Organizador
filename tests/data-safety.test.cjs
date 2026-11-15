@@ -56,3 +56,18 @@ test('legacy backup without version or income keeps absent areas absent',()=>{
  const parsed=safety.backup({data:{fin:[]}});
  assert.deepEqual(parsed,{data:{fin:[]}});
 });
+test('profile backup preserves name, safe photo and appearance while rejecting active content',()=>{
+ const profile={name:'Meu nome',avatar:'data:image/png;base64,aGVsbG8=',accentIndex:2,bgPreset:'deep-dark'};
+ assert.deepEqual(safety.backup({data:{fin:[]},profile,theme:'dark'}).profile,profile);
+ assert.equal(safety.backup({data:{fin:[]},profile,theme:'dark'}).theme,'dark');
+ for(const bad of [{...profile,avatar:'x" onerror="alert(1)'},{...profile,accentIndex:7},{...profile,bgPreset:'invalid'},{...profile,name:{invalid:true}}]) assert.throws(()=>safety.backup({data:{fin:[]},profile:bad}));
+ assert.throws(()=>safety.backup({data:{fin:[]},theme:'invalid'}));
+ assert.equal('profile' in safety.backup({data:{fin:[]}}),false);
+});
+test('profile and theme roll back with other backup data after a storage error',()=>{
+ let failed=false;
+ const original={hub_fin:'old-fin',hub_profile:'old-profile',hub_theme:'light'};
+ const store=storage(original,(key,value)=>key==='hub_theme'&&value==='dark'&&!failed&&(failed=true));
+ assert.throws(()=>safety.batch(store,{hub_fin:'new-fin',hub_profile:'new-profile',hub_theme:'dark'}));
+ assert.deepEqual(store.dump(),original);
+});

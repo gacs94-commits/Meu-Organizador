@@ -49,9 +49,14 @@ let dark = localStorage.getItem('hub_theme')==='dark';
 function applyTheme() {
   document.documentElement.setAttribute('data-theme', dark?'dark':'light');
   document.getElementById('theme-label').textContent = dark?'Tema escuro':'Tema claro';
-  localStorage.setItem('hub_theme', dark?'dark':'light');
 }
-function toggleTheme() { dark=!dark; applyTheme(); }
+
+function toggleTheme() {
+  const next=!dark;
+  try { localStorage.setItem('hub_theme',next?'dark':'light'); }
+  catch(error) { storageError(error);return; }
+  dark=next;applyTheme();
+}
 applyTheme();
 
 // ═══════ NAV ═══════
@@ -1257,6 +1262,8 @@ function exportBackup() {
     version: 1,
     exportedAt: new Date().toISOString(),
     income: income,
+    profile: profileData,
+    theme: dark ? 'dark' : 'light',
     analysis: readFinanceAnalysisSettings(),
     data: D
   };
@@ -1284,6 +1291,8 @@ function importBackup(input) {
     if(!confirm('Restaurar este backup? As áreas presentes no arquivo vão substituir seus registros atuais. As demais serão mantidas.')) { input.value=''; return; }
     const entries = Object.fromEntries(Object.entries(staged.data).map(([key,rows])=>['hub_'+key,JSON.stringify(rows)]));
     if(DataSafety.own(staged,'income')) entries.hub_income=String(staged.income);
+    if(DataSafety.own(staged,'profile')) entries.hub_profile=JSON.stringify(staged.profile);
+    if(DataSafety.own(staged,'theme')) entries.hub_theme=staged.theme;
     if(DataSafety.own(staged.data,'fin')) entries.hub_fin_analysis=JSON.stringify(staged.analysis || {completedMonths:[]});
     try {
       DataSafety.batch(localStorage,entries);
@@ -1302,6 +1311,15 @@ function importBackup(input) {
     }
     restoreBlocked=false;
     if(DataSafety.own(staged,'income')) income=staged.income;
+    if(DataSafety.own(staged,'profile')) {
+      profilePhotoJob++; profilePhotoLoading=false; profileDraftAvatar=undefined;
+      profileData=staged.profile;pendingAccent=null;pendingBg=null;blockedData.delete('profile');
+      $('pp-save-btn').disabled=false;
+      updateProfileUI();renderAccentSwatches();renderBgPresets();
+      setProfileSaveStatus('Perfil restaurado e salvo neste navegador.');
+    }
+    if(DataSafety.own(staged,'theme')) dark=staged.theme==='dark';
+    applyTheme();
     renderIncomeWidget();
     renderWish(); renderCol(); renderMovies(); renderBooks();
     renderFinance(); renderShopping(); renderOthers(); renderGoals();
@@ -1326,7 +1344,7 @@ function showDataRecoveryNotice() {
 }
 function exportRecoveryData() {
   const rawStorage={};
-  for(const key of [...DataSafety.keys.map(key=>'hub_'+key),'hub_income','hub_fin_analysis',DataSafety.journalKey]) rawStorage[key]=localStorage.getItem(key);
+  for(const key of [...DataSafety.keys.map(key=>'hub_'+key),'hub_income','hub_fin_analysis','hub_profile','hub_theme',DataSafety.journalKey]) rawStorage[key]=localStorage.getItem(key);
   const url=URL.createObjectURL(new Blob([JSON.stringify({recoveryVersion:1,rawStorage},null,2)],{type:'application/json'}));
   const link=document.createElement('a');link.href=url;link.download='meu-organizador-recuperacao.json';link.click();URL.revokeObjectURL(url);
 }
@@ -1728,7 +1746,14 @@ const BG_PRESETS = [
   { name:'Escuro azulado',id:'navy-dark',     light:null,      dark:'#0a0f1e',preview:'linear-gradient(135deg,#111827,#0a0f1e)' },
 ];
 
-let profileData = JSON.parse(localStorage.getItem('hub_profile')||'{}');
+function loadProfileData() {
+  try { return DataSafety.profile(JSON.parse(localStorage.getItem('hub_profile') || '{}')); }
+  catch(error) { blockedData.add('profile'); return DataSafety.profile({}); }
+}
+let profileData = loadProfileData();
+let profileDraftAvatar;
+let profilePhotoJob=0;
+let profilePhotoLoading=false;
 let pendingAccent = null;
 let pendingBg = null;
 
@@ -1737,9 +1762,10 @@ function initProfile() {
   renderBgPresets();
   applyProfileTheme();
   updateProfileUI();
+  if(blockedData.has('profile')) setProfileSaveStatus('O perfil salvo não pôde ser lido. Os dados originais foram preservados para recuperação.',true);
 }
 
-function updateProfileUI() {
+function updateProfileUI(preserveNameInput = false) {
   const name   = profileData.name || 'Meu Perfil';
   const avatar = profileData.avatar || null;
   const initial = name.trim() ? name.trim()[0].toUpperCase() : '?';
@@ -1748,7 +1774,7 @@ function updateProfileUI() {
   const btnAvatar = $('profile-btn-avatar');
   const btnName   = $('profile-btn-name');
   if(btnAvatar) {
-    if(avatar) btnAvatar.innerHTML = `<img src="${avatar}" alt="avatar"/>`;
+    if(avatar) setProfilePortrait(btnAvatar,avatar);
     else       btnAvatar.textContent = initial;
   }
   if(btnName) btnName.textContent = name;
@@ -1757,45 +1783,58 @@ function updateProfileUI() {
   const ppAvatar = $('pp-avatar-big');
   const ppName   = $('pp-name-input');
   if(ppAvatar) {
-    if(avatar) ppAvatar.innerHTML = `<img src="${avatar}" alt="avatar"/>`;
+    if(avatar) setProfilePortrait(ppAvatar,avatar);
     else       ppAvatar.textContent = initial;
   }
-  if(ppName) ppName.value = profileData.name || '';
+  if(ppName && !preserveNameInput) ppName.value = profileData.name || '';
 }
 
-function previewProfileName() {
-  const val = $('pp-name-input').value;
-  const initial = val.trim() ? val.trim()[0].toUpperCase() : '?';
-  const ppAvatar = $('pp-avatar-big');
-  if(ppAvatar && !profileData.avatar) ppAvatar.textContent = initial;
-  $('profile-btn-name').textContent = val || 'Meu Perfil';
+function setProfilePortrait(element,src) {
+  const image=document.createElement('img');
+  image.src=DataSafety.image(src);image.alt='Foto do perfil';
+  element.replaceChildren(image);
 }
+function setProfileSaveStatus(message,error=false) {
+  const status=$('pp-save-status');
+  status.textContent=message;status.classList.toggle('is-error',error);
+}
+function previewProfileName() { saveProfile(false,true); }
 
-function handleProfileAvatar(inp) {
-  const f = inp.files[0]; if(!f) return;
-  if(!f.type.startsWith('image/')) { toast('❌ Use uma imagem JPG ou PNG'); return; }
-  const r = new FileReader();
-  r.onload = e => {
-    const orig = new Image();
-    orig.onload = () => {
-      const size = 128;
-      const canvas = document.createElement('canvas');
-      canvas.width = canvas.height = size;
-      const ctx = canvas.getContext('2d');
-      // crop center square
-      const min = Math.min(orig.width, orig.height);
-      const sx = (orig.width-min)/2, sy = (orig.height-min)/2;
-      ctx.drawImage(orig, sx, sy, min, min, 0, 0, size, size);
-      const compressed = canvas.toDataURL('image/jpeg', 0.85);
-      profileData.avatar = compressed;
-      const ppAvatar = $('pp-avatar-big');
-      const btnAvatar = $('profile-btn-avatar');
-      if(ppAvatar)  ppAvatar.innerHTML  = `<img src="${compressed}" alt="avatar"/>`;
-      if(btnAvatar) btnAvatar.innerHTML = `<img src="${compressed}" alt="avatar"/>`;
-    };
-    orig.src = e.target.result;
+function handleProfileAvatar(input) {
+  const file=input.files[0];
+  if(!file) return;
+  const job=++profilePhotoJob;
+  profileDraftAvatar=undefined;
+  const fail=message=>{
+    if(job!==profilePhotoJob) return;
+    profilePhotoLoading=false;$('pp-save-btn').disabled=false;
+    input.value='';setProfileSaveStatus(message,true);
   };
-  r.readAsDataURL(f);
+  if(!file.type.startsWith('image/')) { fail('Selecione uma imagem válida. A foto anterior foi mantida.'); return; }
+  if(file.size>8*1024*1024) { fail('A imagem deve ter até 8 MB. A foto anterior foi mantida.'); return; }
+  profilePhotoLoading=true;$('pp-save-btn').disabled=true;
+  setProfileSaveStatus('Processando a foto… aguarde a confirmação de salvamento.');
+  const reader=new FileReader();
+  reader.onerror=()=>fail('Não foi possível ler a foto. Tente novamente.');
+  reader.onload=event=>{
+    if(job!==profilePhotoJob) return;
+    const original=new Image();
+    original.onerror=()=>fail('A imagem não pôde ser aberta. A foto anterior foi mantida.');
+    original.onload=()=>{
+      if(job!==profilePhotoJob) return;
+      try {
+        const size=128, canvas=document.createElement('canvas');canvas.width=canvas.height=size;
+        const side=Math.min(original.width,original.height);
+        if(!side) throw new Error('Imagem vazia');
+        canvas.getContext('2d').drawImage(original,(original.width-side)/2,(original.height-side)/2,side,side,0,0,size,size);
+        profileDraftAvatar=canvas.toDataURL('image/jpeg',.85);
+        profilePhotoLoading=false;$('pp-save-btn').disabled=false;
+        saveProfile(false,true);
+      } catch(error) { fail('Não foi possível preparar a foto. Tente novamente.'); }
+    };
+    original.src=event.target.result;
+  };
+  reader.readAsDataURL(file);
 }
 
 function renderAccentSwatches() {
@@ -1815,8 +1854,7 @@ function selectAccent(idx) {
   document.querySelectorAll('.color-swatch').forEach((el,i) => {
     el.classList.toggle('active', i===idx);
   });
-  // Live preview
-  applyAccent(idx);
+  saveProfile(false,true);
 }
 
 function applyAccent(idx) {
@@ -1844,40 +1882,59 @@ function selectBgPreset(id) {
   document.querySelectorAll('.bg-preset').forEach(el => {
     el.classList.toggle('active', el.onclick.toString().includes(`'${id}'`));
   });
-  applyBgPreset(id);
+  saveProfile(false,true);
 }
 
 function applyBgPreset(id) {
-  const preset = BG_PRESETS.find(p=>p.id===id);
-  if(!preset) return;
-  const dark = document.documentElement.getAttribute('data-theme')==='dark';
-  const root = document.documentElement.style;
-  if(dark && preset.dark)   root.setProperty('--bg', preset.dark);
-  if(!dark && preset.light) root.setProperty('--bg', preset.light);
-  // Switch theme if needed
-  if(id.includes('dark') && !dark)   { dark_=true;  applyTheme(); }
-  if(!id.includes('dark') && dark)   { dark_=false; applyTheme(); }
+  const preset=BG_PRESETS.find(p=>p.id===id);
+  const root=document.documentElement.style;
+  const color=preset && (dark ? preset.dark : preset.light);
+  if(color) root.setProperty('--bg',color);
+  else root.removeProperty('--bg');
 }
 
 function applyProfileTheme() {
-  if(profileData.accentIndex != null) applyAccent(profileData.accentIndex);
-  if(profileData.bgPreset) applyBgPreset(profileData.bgPreset);
+  applyAccent(profileData.accentIndex);
+  applyBgPreset(profileData.bgPreset);
 }
 
-function saveProfile() {
-  profileData.name = $('pp-name-input').value.trim() || 'Meu Perfil';
-  if(pendingAccent != null) profileData.accentIndex = pendingAccent;
-  if(pendingBg != null)     profileData.bgPreset    = pendingBg;
-  localStorage.setItem('hub_profile', JSON.stringify(profileData));
-  pendingAccent = null; pendingBg = null;
-  updateProfileUI();
-  closeProfilePanel();
-  toast('✅ Perfil salvo!');
+function saveProfile(close=true,preserveNameInput=false) {
+  if(close && profilePhotoLoading) {
+    setProfileSaveStatus('Aguarde o processamento e o salvamento da foto.');return false;
+  }
+  if(restoreBlocked || blockedData.has('profile')) {
+    showDataRecoveryNotice();setProfileSaveStatus('Recupere os dados locais antes de alterar o perfil.',true);return false;
+  }
+  let next;
+  const nextDark=pendingBg === null ? dark : pendingBg.includes('dark');
+  try {
+    next=DataSafety.profile({
+      ...profileData,name:$('pp-name-input').value.trim() || 'Meu Perfil',
+      avatar:profileDraftAvatar === undefined ? profileData.avatar : profileDraftAvatar,
+      accentIndex:pendingAccent === null ? profileData.accentIndex : pendingAccent,
+      bgPreset:pendingBg === null ? profileData.bgPreset : pendingBg
+    });
+    if(nextDark !== dark) DataSafety.batch(localStorage,{hub_profile:JSON.stringify(next),hub_theme:nextDark?'dark':'light'});
+    else DataSafety.write(localStorage,'hub_profile',next);
+  } catch(error) {
+    restoreBlocked=localStorage.getItem(DataSafety.journalKey)!==null;
+    if(restoreBlocked) showDataRecoveryNotice();
+    setProfileSaveStatus('Não foi possível salvar. O perfil anterior foi mantido. Libere espaço e tente Salvar agora.',true);
+    if(close) storageError(error);
+    return false;
+  }
+  profileData=next;dark=nextDark;
+  pendingAccent=null;pendingBg=null;profileDraftAvatar=undefined;
+  updateProfileUI(preserveNameInput);renderAccentSwatches();renderBgPresets();applyTheme();
+  setProfileSaveStatus(profilePhotoLoading ? 'Nome salvo. A foto ainda está sendo processada.' : 'Alterações salvas automaticamente neste navegador.');
+  if(close) { closeProfilePanel();toast('✅ Perfil salvo!'); }
+  return true;
 }
 
 function toggleProfilePanel() {
   const panel = $('profile-panel');
   const isOpen = panel.classList.toggle('open');
+  $('profile-btn').setAttribute('aria-expanded',String(isOpen));
   if(isOpen) {
     // Close sidebar on mobile
     if(window.innerWidth <= 700) closeSidebar();
@@ -1956,13 +2013,15 @@ function renderStorageUsage() {
 
 function closeProfilePanel() {
   $('profile-panel')?.classList.remove('open');
+  $('profile-btn').setAttribute('aria-expanded','false');
 }
 
 // Close panel when clicking outside
 document.addEventListener('click', e => {
   const panel = $('profile-panel');
   const btn   = $('profile-btn');
-  if(panel?.classList.contains('open') && !panel.contains(e.target) && !btn.contains(e.target)) {
+  const path=e.composedPath();
+  if(panel?.classList.contains('open') && !path.includes(panel) && !path.includes(btn)) {
     closeProfilePanel();
   }
 });
@@ -1971,8 +2030,7 @@ document.addEventListener('click', e => {
 const _applyTheme = applyTheme;
 window.applyTheme = function() {
   _applyTheme();
-  if(profileData.accentIndex != null) applyAccent(profileData.accentIndex);
-  if(profileData.bgPreset) applyBgPreset(profileData.bgPreset);
+  applyProfileTheme();
 };
 
 // Init

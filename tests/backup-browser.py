@@ -4,10 +4,12 @@ Requires Python Playwright and Chromium (CHROMIUM_PATH overrides its path).
 """
 import json
 import os
+import re
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 BASE=os.environ.get('APP_TEST_URL','http://127.0.0.1:8767')
+EXPECTED_CACHE=re.search(r"CACHE_NAME = '([^']+)'",(Path(__file__).resolve().parent.parent/'sw.js').read_text()).group(1)
 FIN={'id':1,'date':'2026-11-10','desc':'Compra de exemplo','val':20,'type':'saida','cat':'Outros','importSource':'Nubank PF — cartão','importKind':'nubank-card'}
 
 def upload_backup(page, data, income=0):
@@ -136,7 +138,7 @@ with sync_playwright() as pw:
         page.goto(BASE)
         page.evaluate('navigator.serviceWorker.ready')
         page.wait_for_function('navigator.serviceWorker.controller !== null')
-        assert page.evaluate("caches.keys().then(keys=>keys.includes('meu-organizador-v15-month-analysis'))")
+        assert page.evaluate("name=>caches.keys().then(keys=>keys.includes(name))",EXPECTED_CACHE)
         context.set_offline(True)
         page.reload()
         assert page.evaluate("typeof DataSafety.backup")=='function'

@@ -31,11 +31,11 @@
 </nav>
 
 <!-- PROFILE BUTTON -->
-<div class="profile-btn" id="profile-btn" onclick="toggleProfilePanel()">
-  <div class="profile-avatar" id="profile-btn-avatar">?</div>
+<button type="button" class="profile-btn" id="profile-btn" aria-controls="profile-panel" aria-expanded="false" aria-label="Abrir perfil" onclick="toggleProfilePanel()">
+  <span class="profile-avatar" id="profile-btn-avatar">?</span>
   <span class="profile-name" id="profile-btn-name">Meu Perfil</span>
   <span class="profile-chevron">▼</span>
-</div>
+</button>
 
 <!-- PROFILE PANEL -->
 <div class="profile-panel" id="profile-panel">
@@ -43,10 +43,12 @@
     <div class="pp-avatar-wrap" title="Clique para trocar a foto">
       <div class="pp-avatar-big" id="pp-avatar-big">?</div>
       <div class="pp-avatar-edit">✏️</div>
-      <input type="file" accept="image/*" class="pp-avatar-input" onchange="handleProfileAvatar(this)"/>
+      <input type="file" accept="image/*" class="pp-avatar-input" aria-label="Escolher foto do perfil" onchange="handleProfileAvatar(this)"/>
     </div>
-    <input class="pp-name-input" id="pp-name-input" placeholder="Seu nome..." maxlength="30" oninput="previewProfileName()"/>
+    <input class="pp-name-input" id="pp-name-input" aria-label="Nome do perfil" placeholder="Seu nome..." maxlength="30" oninput="previewProfileName()"/>
   </div>
+
+  <p id="pp-save-status" class="pp-save-status" role="status" aria-live="polite">Alterações salvas automaticamente neste navegador.</p>
 
   <div class="pp-section">
     <div class="pp-section-title">Cor de destaque</div>
@@ -64,7 +66,8 @@
   </div>
 
   <div class="pp-section">
-    <button class="pp-save-btn" onclick="saveProfile()">Salvar perfil</button>
+    <button type="button" class="pp-save-btn" id="pp-save-btn" onclick="saveProfile()">Salvar agora</button>
+    <p class="pp-backup-help">Nome e foto ficam neste navegador. Para levar seu perfil a outro aparelho, exporte e importe um backup.</p>
   </div>
 </div>
 <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>

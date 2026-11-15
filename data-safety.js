@@ -84,6 +84,17 @@ const DataSafety = (() => {
     if(!object(value) || !Array.isArray(value.completedMonths) || value.completedMonths.some(month=>typeof month !== 'string' || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month))) fail();
     return {completedMonths:[...new Set(value.completedMonths)].sort()};
   }
+  function profile(value) {
+    if(!object(value)) fail();
+    const name=text(value.name,'Meu Perfil').trim() || 'Meu Perfil';
+    if(name.length>30) fail();
+    const accentIndex=number(value.accentIndex);
+    if(!Number.isInteger(accentIndex) || accentIndex>6) fail();
+    return {
+      name, avatar:image(value.avatar), accentIndex,
+      bgPreset:choice(value.bgPreset,['default-light','white','cream','default-dark','deep-dark','navy-dark'],'default-light')
+    };
+  }
   function backup(value) {
     if(!object(value) || !object(value.data) || (value.version !== undefined && value.version !== 1)) fail();
     const data={};
@@ -91,6 +102,8 @@ const DataSafety = (() => {
     if(!Object.keys(data).length) fail();
     const result={data};
     if(own(value,'income')) result.income=number(value.income);
+    if(own(value,'profile')) result.profile=profile(value.profile);
+    if(own(value,'theme')) result.theme=choice(value.theme,['light','dark']);
     if(own(value,'analysis')) {
       if(!own(data,'fin')) fail();
       result.analysis=analysisSettings(value.analysis);
@@ -104,7 +117,7 @@ const DataSafety = (() => {
     const raw=storage.getItem(journalKey);
     if(raw === null) return;
     const before=JSON.parse(raw);
-    if(!object(before) || Object.entries(before).some(([key,value])=>!['hub_income','hub_fin_analysis',...keys.map(k=>'hub_'+k)].includes(key) || (value !== null && typeof value !== 'string'))) fail();
+    if(!object(before) || Object.entries(before).some(([key,value])=>!['hub_income','hub_fin_analysis','hub_profile','hub_theme',...keys.map(k=>'hub_'+k)].includes(key) || (value !== null && typeof value !== 'string'))) fail();
     for(const key of Object.keys(before)) storage.removeItem(key);
     for(const [key,value] of Object.entries(before)) if(value !== null) storage.setItem(key,value);
     storage.removeItem(journalKey);
@@ -113,7 +126,7 @@ const DataSafety = (() => {
     recover(storage);
     const before={};
     for(const key of Object.keys(entries)) {
-      if(!['hub_income','hub_fin_analysis',...keys.map(k=>'hub_'+k)].includes(key)) fail();
+      if(!['hub_income','hub_fin_analysis','hub_profile','hub_theme',...keys.map(k=>'hub_'+k)].includes(key)) fail();
       before[key]=storage.getItem(key);
     }
     storage.setItem(journalKey,JSON.stringify(before));
@@ -125,6 +138,6 @@ const DataSafety = (() => {
       throw error;
     }
   }
-  return {keys,journalKey,own,collection,analysisSettings,backup,image,write,batch,recover};
+  return {keys,journalKey,own,collection,analysisSettings,profile,backup,image,write,batch,recover};
 })();
 if(typeof module !== 'undefined' && module.exports) module.exports=DataSafety;
