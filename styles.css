@@ -846,16 +846,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 #income-mobile-slot{display:none}
 .income-display:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 @media(max-width:700px){
-  #income-mobile-slot{display:block;margin-bottom:20px}
-  #income-mobile-slot .income-widget{padding:18px;border:1px solid var(--accent-border);border-radius:12px;background:var(--surface);box-shadow:var(--shadow)}
-  #income-mobile-slot .income-lbl{font-size:12px;color:var(--text2);margin-bottom:10px}
-  #income-mobile-slot .income-display{min-height:52px;background:var(--accent-light);border-color:var(--accent-border)}
-  #income-mobile-slot .income-amount{font-size:26px;color:var(--accent)}
-  #income-mobile-slot .income-amount.empty{font-size:18px}
+  .mobile-topbar{justify-content:flex-start;padding:env(safe-area-inset-top) 72px 0 16px;z-index:55}
+  #income-mobile-slot{display:block;width:100%;min-width:0}
+  #income-mobile-slot .income-widget{padding:0;border:0;background:transparent}
+  #income-mobile-slot .income-lbl{font-size:10px;color:var(--text2);margin:0;line-height:16px}
+  #income-mobile-slot .income-display{height:32px;min-height:32px;padding:0;border:0;background:transparent;justify-content:flex-start;gap:12px}
+  #income-mobile-slot .income-amount{font-size:21px;color:var(--accent);line-height:30px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #income-mobile-slot .income-amount.empty{font-size:17px}
   #income-mobile-slot .income-edit-icon{opacity:1}
-  #income-mobile-slot .income-edit-icon svg{width:18px;height:18px}
-  #income-mobile-slot .income-inline-input{font-size:24px;min-height:52px}
-  #income-mobile-slot .income-bar-wrap{margin-top:14px}
-  #income-mobile-slot .income-bar-labels{font-size:11px}
-  #income-mobile-slot .income-avail{font-size:13px;margin-top:8px}
+  #income-mobile-slot .income-edit-icon svg{width:15px;height:15px}
+  #income-mobile-slot .income-inline-input{font-size:18px;height:32px;padding:2px 8px}
+  #income-mobile-slot .income-bar-wrap{display:none!important}
+  .profile-btn{z-index:56}
+  .mobile-bottom-nav{z-index:55}
+  .sidebar{padding-top:calc(64px + env(safe-area-inset-top));padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+  .sidebar-header{padding-left:16px;min-height:0}
 }

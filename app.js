@@ -1099,7 +1099,7 @@ const renders = { w:renderWish, c:renderCol, mv:renderMovies, bk:renderBooks, fi
 // ═══════ INCOME ═══════
 let income = parseFloat(localStorage.getItem('hub_income')||'0');
 
-// Use the same income widget in the sidebar on desktop and above finance on mobile.
+// Use the same income widget in the sidebar on desktop and in the fixed header on mobile.
 const incomeMobileQuery = window.matchMedia('(max-width:700px)');
 function placeIncomeWidget() {
   const widget = $('income-widget');
@@ -1596,19 +1596,15 @@ function selectGSGame(el) {
 
 // ═══════ SIDEBAR MOBILE ═══════
 function toggleSidebar() {
-  const sb = $('sidebar'), hb = $('hamburger'), bd = $('sidebar-backdrop');
+  const sb = $('sidebar'), bd = $('sidebar-backdrop');
   const open = sb.classList.toggle('open');
-  hb.classList.toggle('open', open);
   bd.classList.toggle('open', open);
-  hb.setAttribute('aria-expanded',String(open));
   $('mobile-menu').setAttribute('aria-expanded',String(open));
   document.body.classList.toggle('mobile-menu-open',open);
 }
 function closeSidebar() {
   $('sidebar').classList.remove('open');
-  $('hamburger').classList.remove('open');
   $('sidebar-backdrop').classList.remove('open');
-  $('hamburger').setAttribute('aria-expanded','false');
   $('mobile-menu').setAttribute('aria-expanded','false');
   document.body.classList.remove('mobile-menu-open');
 }

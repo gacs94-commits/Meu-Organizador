@@ -22,17 +22,13 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<div class="mobile-topbar" aria-hidden="true">Meu <strong>Organizador</strong></div>
+<header class="mobile-topbar" aria-label="Renda mensal"><div id="income-mobile-slot"></div></header>
 <nav class="mobile-bottom-nav" aria-label="Navegação principal no celular">
   <button type="button" data-section="finance" aria-current="page" onclick="goTo('finance')"><span aria-hidden="true">◈</span>Finanças</button>
   <button type="button" data-section="health" onclick="goTo('health')"><span aria-hidden="true">♡</span>Saúde</button>
   <button type="button" data-section="shopping" onclick="goTo('shopping')"><span aria-hidden="true">▤</span>Compras</button>
   <button type="button" id="mobile-menu" aria-controls="sidebar" aria-expanded="false" onclick="toggleSidebar()"><span aria-hidden="true">☰</span>Mais</button>
 </nav>
-
-<button class="hamburger" id="hamburger" onclick="toggleSidebar()" aria-label="Menu">
-  <span></span><span></span><span></span>
-</button>
 
 <!-- PROFILE BUTTON -->
 <div class="profile-btn" id="profile-btn" onclick="toggleProfilePanel()">
@@ -458,7 +454,6 @@
       <div class="section-desc">Suas compras do cartão, organizadas a cada importação</div>
     </div>
 
-    <div id="income-mobile-slot"></div>
     <div class="finance-import-card">
       <div>
         <span class="finance-eyebrow">SEU CARTÃO, EM UM SÓ LUGAR</span>
