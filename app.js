@@ -1099,16 +1099,33 @@ const renders = { w:renderWish, c:renderCol, mv:renderMovies, bk:renderBooks, fi
 // ═══════ INCOME ═══════
 let income = parseFloat(localStorage.getItem('hub_income')||'0');
 
+// Use the same income widget in the sidebar on desktop and above finance on mobile.
+const incomeMobileQuery = window.matchMedia('(max-width:700px)');
+function placeIncomeWidget() {
+  const widget = $('income-widget');
+  if(incomeMobileQuery.matches) $('income-mobile-slot').appendChild(widget);
+  else $('income-sidebar-slot').after(widget);
+}
+incomeMobileQuery.addEventListener('change',placeIncomeWidget);
+placeIncomeWidget();
+
 function editIncome() {
+  const existing = document.querySelector('#income-widget .income-inline-input');
+  if(existing) { existing.focus(); return; }
   const display = $('income-display');
   display.style.display = 'none';
   const inp = document.createElement('input');
   inp.className = 'income-inline-input';
   inp.type = 'number'; inp.min = '0'; inp.step = '0.01';
+  inp.setAttribute('aria-label','Renda mensal em reais');
   inp.value = income || ''; inp.placeholder = 'ex: 5000,00';
   $('income-widget').insertBefore(inp, display.nextSibling);
   inp.focus(); inp.select();
+  let finished = false;
   const confirm = () => {
+    if(finished) return;
+    if(!inp.checkValidity()) { inp.reportValidity(); inp.focus(); return; }
+    finished = true;
     income = parseFloat(inp.value) || 0;
     localStorage.setItem('hub_income', income);
     inp.remove(); display.style.display = '';
@@ -1119,7 +1136,7 @@ function editIncome() {
   inp.addEventListener('blur', confirm);
   inp.addEventListener('keydown', e => {
     if(e.key==='Enter') { inp.blur(); }
-    if(e.key==='Escape') { inp.remove(); display.style.display=''; }
+    if(e.key==='Escape') { finished = true; inp.remove(); display.style.display=''; display.focus(); }
   });
 }
 
