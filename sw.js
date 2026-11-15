@@ -1,4 +1,4 @@
-const CACHE_NAME = 'meu-organizador-v6-mobile-final';
+const CACHE_NAME = 'meu-organizador-v8-finance-layout';
 const ASSETS = [
   './',
   './index.html',

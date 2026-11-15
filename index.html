@@ -454,27 +454,51 @@
   <div class="section active" id="sec-finance">
     <div class="section-header">
       <div class="section-title"><span class="icon">💰</span> Financeiro</div>
-      <div class="section-desc">Registro simples de entradas e saídas</div>
+      <div class="section-desc">Suas compras do cartão, organizadas a cada importação</div>
     </div>
 
-    <!-- Sub-tabs -->
-    <div style="display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap">
-      <button class="fbtn active" id="ftab-extrato" onclick="finTab('extrato')">📋 Extrato</button>
-      <button class="fbtn" id="ftab-historico" onclick="finTab('historico')">📅 Histórico mensal</button>
-      <button class="fbtn" onclick="openImporter()" style="margin-left:auto">📥 Importar extrato</button>
+    <div class="finance-import-card">
+      <div>
+        <span class="finance-eyebrow">SEU CARTÃO, EM UM SÓ LUGAR</span>
+        <h2>Atualize suas compras sem digitar uma por uma</h2>
+        <p>Importe o CSV da fatura Nubank ou um extrato OFX. Revise as novidades antes de adicionar.</p>
+        <p id="fin-import-status" class="finance-import-status" aria-live="polite"></p>
+      </div>
+      <button class="btn btn-primary" onclick="openImporter()">📥 Importar / atualizar fatura</button>
+    </div>
+    <div class="finance-tabs" aria-label="Visualização financeira">
+      <button class="fbtn active" id="ftab-extrato" onclick="finTab('extrato')">Lançamentos</button>
+      <button class="fbtn" id="ftab-historico" onclick="finTab('historico')">Histórico mensal</button>
     </div>
 
     <!-- EXTRATO PANEL -->
     <div id="fpanel-extrato">
+    <div class="finance-summary-heading"><div><h3>Resumo dos lançamentos</h3><p>Período pela data da compra, não pelo vencimento da fatura.</p></div><label class="finance-period">Período      <select id="fin-month" onchange="renderFinance()" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--surface);color:var(--text);cursor:pointer">
+        <option value="">📅 Todos os meses</option>
+      </select></label></div>
     <div class="stats-row" id="fin-stats">
-      <div class="stat"><div class="stat-lbl">Saldo atual</div><div class="stat-val" id="fin-s1">R$ 0</div></div>
-      <div class="stat"><div class="stat-lbl">Total entradas</div><div class="stat-val c-red" id="fin-s2">R$ 0</div></div>
-      <div class="stat"><div class="stat-lbl">Total saídas</div><div class="stat-val c-accent" id="fin-s3">R$ 0</div></div>
-      <div class="stat"><div class="stat-lbl">Transações</div><div class="stat-val c-accent" id="fin-s4">0</div></div>
+      <div class="stat"><div class="stat-lbl">Gastos importados</div><div class="stat-val" id="fin-s1">R$ 0</div></div>
+      <div class="stat"><div class="stat-lbl">Parcelas incluídas nos gastos</div><div class="stat-val c-accent" id="fin-s2">R$ 0</div></div>
+      <div class="stat"><div class="stat-lbl">Gastos manuais / sem origem</div><div class="stat-val c-accent" id="fin-s3">R$ 0</div></div>
+      <div class="stat"><div class="stat-lbl">Lançamentos no período</div><div class="stat-val c-accent" id="fin-s4">0</div></div>
     </div>
-    <div class="fin-budget-help"><p id="fin-budget-note"></p><button class="btn btn-secondary btn-sm" onclick="editIncome(); if(window.innerWidth<=700) toggleSidebar();">Definir / editar renda</button></div>
-    <div class="card">
-      <h3>Registrar transação</h3>
+    <p id="fin-budget-note" class="finance-helper"></p>
+    <div class="card finance-categories"><h3>Onde você gastou</h3><div id="fin-categories"></div></div>
+    <div class="toolbar" style="flex-wrap:wrap;gap:8px">
+      <span class="toolbar-title" id="fin-title">Extrato</span>
+
+      <input class="search" id="fin-search" aria-label="Buscar lançamentos" placeholder="Buscar compra ou categoria" oninput="renderFinance()"/>
+      <div class="filters">
+        <button class="fbtn active" onclick="setF('fin','all',this)">Todos</button>
+        <button class="fbtn" onclick="setF('fin','entrada',this)">Entradas</button>
+        <button class="fbtn" onclick="setF('fin','saida',this)">Saídas</button>
+      </div>
+    </div>
+    <div id="fin-list"></div>
+    <details class="card finance-manual" id="fin-manual">
+      <summary>＋ Adicionar lançamento manual <span>Para Pix, débito, dinheiro ou algo fora do arquivo</span></summary>
+      <div class="finance-manual-body">
+      <p class="finance-helper">Não cadastre aqui compras que já estão na fatura importada.</p>
       <div style="margin-bottom:12px">
         <div class="fin-type-toggle">
           <button class="fin-type-btn entrada active" id="fin-btn-entrada" onclick="setFinType('entrada')">⬆️ Entrada</button>
@@ -494,21 +518,9 @@
         <div class="field"><label>Data</label><input type="date" id="fin-date"/></div>
       </div>
       <div class="form-actions"><button class="btn btn-primary" onclick="addFinance()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Registrar</button></div>
-    </div>
-
-    <div class="toolbar" style="flex-wrap:wrap;gap:8px">
-      <span class="toolbar-title" id="fin-title">Extrato</span>
-      <select id="fin-month" onchange="renderFinance()" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--surface);color:var(--text);cursor:pointer">
-        <option value="">📅 Todos os meses</option>
-      </select>
-      <input class="search" id="fin-search" placeholder="🔍 Buscar..." oninput="renderFinance()"/>
-      <div class="filters">
-        <button class="fbtn active" onclick="setF('fin','all',this)">Todos</button>
-        <button class="fbtn" onclick="setF('fin','entrada',this)">Entradas</button>
-        <button class="fbtn" onclick="setF('fin','saida',this)">Saídas</button>
       </div>
-    </div>
-    <div id="fin-list"></div>
+    </details>
+
     </div>
 
     <!-- HISTÓRICO PANEL -->
@@ -828,6 +840,11 @@
       <small>Processado localmente — nenhum dado enviado para a internet</small>
     </div>
 
+    <div id="imp-source-section" class="field" style="display:none;margin:12px 0">
+      <label for="imp-source">Conta ou cartão deste arquivo</label>
+      <input id="imp-source" value="Nubank PF — cartão" placeholder="Ex.: Nubank PF — cartão" oninput="refreshImportSource()"/>
+      <small>Use sempre o mesmo nome para o mesmo cartão. Para outro cartão ou conta, use outro nome. Compras anteriores não são apagadas; categorias existentes são preservadas. Possíveis alterações ficam para revisão e não substituem lançamentos automaticamente.</small>
+    </div>
     <div class="pdf-status" id="imp-status"></div>
 
     <div id="imp-preview-section" style="display:none">

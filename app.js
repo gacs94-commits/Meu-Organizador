@@ -515,7 +515,7 @@ function finTab(t) {
 
 function renderFinHistory() {
   const el = $('fin-history');
-  if(!D.fin.length) { el.innerHTML = emptyHTML('Nenhuma transação registrada ainda.<br>Adicione no Extrato para ver o histórico.'); return; }
+  if(!D.fin.length) { el.innerHTML = emptyHTML('Nenhuma transação registrada ainda.<br>Importe uma fatura para ver o histórico.'); return; }
 
   const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 
@@ -604,7 +604,7 @@ function renderFinHistory() {
               <div class="fin-dot ${f.type}" style="flex-shrink:0"></div>
               <div class="month-tx-body">
                 <div class="month-tx-name">${esc(f.desc)}</div>
-                <div class="month-tx-meta">${[f.cat, f.date?new Date(f.date+'T00:00:00').toLocaleDateString('pt-BR'):''].filter(Boolean).join(' · ')}</div>
+                <div class="month-tx-meta">${[f.cat, f.date?new Date(f.date+'T00:00:00').toLocaleDateString('pt-BR'):'', f.importSource ? 'Importado · '+f.importSource : 'Manual / sem origem'].filter(Boolean).map(esc).join(' · ')}</div>
               </div>
               <span class="fin-amount ${f.type}" style="font-size:13px">${f.type==='entrada'?'+':'−'}${fp(f.val)}</span>
               ${iconBtn('','Remover',DEL_ICO,`delFinance(${f.id});renderFinHistory()`)}
@@ -673,49 +673,37 @@ function renderFinance() {
   if(s)               list = list.filter(f=>f.desc.toLowerCase().includes(s)||(f.cat||'').toLowerCase().includes(s));
   list.sort((a,b)=>b.date.localeCompare(a.date));
 
-  // A monthly budget must never subtract all-time spending from one month's income.
-  const budgetMonth = selMonth || currentMonth;
-  const statBase = D.fin.filter(f=>(f.date||'').startsWith(budgetMonth));
-  const spent = statBase.filter(f=>f.type==='saida').reduce((total,f)=>total+f.val,0);
-  const available = income - spent;
-  const periodLbl = `${MONTHS_PT[parseInt(budgetMonth.split('-')[1])-1]} ${budgetMonth.split('-')[0]}`;
-  $('fin-s1').textContent = income > 0 ? fp(available) : 'Defina sua renda';
-  $('fin-s1').style.color = income > 0 && available < 0 ? 'var(--red)' : 'var(--green)';
-  $('fin-s2').textContent = fp(spent);
-  $('fin-s3').textContent = income > 0 ? fp(income) : 'Não definida';
+  const statBase = D.fin.filter(f=>!selMonth || (f.date||'').startsWith(selMonth));
+  const expenses = statBase.filter(f=>f.type==='saida');
+  const imported = expenses.filter(f=>f.importSource);
+  const installments = imported.filter(f=>/parcela|\d+\s*\/\s*\d+/i.test(f.desc));
+  $('fin-s1').textContent = fp(imported.reduce((sum,f)=>sum+f.val,0));
+  $('fin-s2').textContent = fp(installments.reduce((sum,f)=>sum+f.val,0));
+  $('fin-s3').textContent = fp(expenses.filter(f=>!f.importSource).reduce((sum,f)=>sum+f.val,0));
   $('fin-s4').textContent = statBase.length;
-  const budgetLabels = [available < 0 && income > 0 ? 'Orçamento excedido' : 'Disponível para gastar','Já gastei','Renda mensal','Transações'];
-  document.querySelectorAll('#fin-stats .stat-lbl').forEach((el,i)=>{
-    el.textContent = `${budgetLabels[i]} · ${periodLbl}`;
-  });
-  $('fin-budget-note').textContent = (selMonth ? '' : 'Os indicadores mostram o mês atual; o extrato abaixo mostra todos os meses. ') +
-    (income > 0 ? 'Disponível = renda mensal cadastrada − saídas do mês. As entradas do extrato não são somadas novamente à renda.' : 'Cadastre sua renda mensal para calcular quanto ainda pode gastar.');
+  const labels = ['Gastos importados','Parcelas incluídas nos gastos','Gastos manuais / sem origem','Lançamentos no período'];
+  document.querySelectorAll('#fin-stats .stat-lbl').forEach((el,i)=>el.textContent=labels[i]);
+  $('fin-budget-note').textContent = 'As parcelas acima já estão nos gastos importados; não some os dois valores. Lançamentos antigos sem origem aparecem junto dos manuais. O resumo não muda com a busca ou o filtro de entradas e saídas.';
+  const categories = new Map();
+  expenses.forEach(f=>categories.set(f.cat || 'Sem categoria',(categories.get(f.cat || 'Sem categoria')||0)+f.val));
+  const total = expenses.reduce((sum,f)=>sum+f.val,0);
+  $('fin-categories').innerHTML = categories.size ? [...categories].sort((a,b)=>b[1]-a[1]).map(([cat,value])=>`<div class="finance-category"><div><span>${esc(cat)}</span><strong>${fp(value)}</strong></div><progress max="${total}" value="${value}" aria-label="${esc(cat)}"></progress></div>`).join('') : '<p class="finance-helper">As categorias aparecem aqui quando houver gastos neste período.</p>';
+  renderFinanceImportStatus();
 
   // Title
   const monthLabel = selMonth
     ? ` — ${MONTHS_PT[parseInt(selMonth.split('-')[1])-1]} ${selMonth.split('-')[0]}`
     : '';
-  $('fin-title').textContent = `Extrato${monthLabel} (${list.length})`;
+  $('fin-title').textContent = `Lançamentos${monthLabel} (${list.length})`;
 
   // Sidebar income widget — always uses current month spending from extrato
-  const mSpent = D.fin.filter(f=>f.type==='saida'&&(f.date||'').startsWith(currentMonth)).reduce((a,f)=>a+f.val,0);
-  let finInsight = '';
-  if(income) {
-    const pct   = pctOfIncome(mSpent);
-    const avail = income - mSpent;
-    const color = pct>90?'var(--red)':pct>70?'var(--amber)':'inherit';
-    finInsight  = incomeInsight(`Este mês: <strong>${fp(mSpent)}</strong> gasto (<strong style="color:${color}">${pct}% da renda</strong>) · <strong style="color:var(--green)">${fp(avail>=0?avail:0)}</strong> ainda disponível`);
-  }
-  const fiEl = $('fin-insight');
-  if(fiEl) fiEl.innerHTML = finInsight;
-  else { const d=document.createElement('div');d.id='fin-insight';d.innerHTML=finInsight;$('fin-list').insertAdjacentElement('beforebegin',d); }
   renderIncomeWidget();
 
   const el = $('fin-list');
   if(!list.length) {
     el.innerHTML = emptyHTML(selMonth
-      ? `Nenhuma transação em ${MONTHS_PT[parseInt(selMonth.split('-')[1])-1]} ${selMonth.split('-')[0]}.<br>Adicione uma transação ou escolha outro mês.`
-      : 'Nenhuma transação registrada.');
+      ? `Nenhuma transação em ${MONTHS_PT[parseInt(selMonth.split('-')[1])-1]} ${selMonth.split('-')[0]}.<br>Importe sua fatura ou escolha outro mês.`
+      : 'Nenhum lançamento encontrado. Importe sua fatura para começar.');
     return;
   }
 
@@ -745,12 +733,21 @@ function renderFinance() {
   }
 }
 
+function renderFinanceImportStatus() {
+  const el = $('fin-import-status');
+  let last;
+  try { last = JSON.parse(localStorage.getItem('hub_fin_last_import') || 'null'); } catch(e) { last = null; }
+  el.textContent = last && last.at && Number.isFinite(new Date(last.at).getTime())
+    ? `Última importação: ${new Date(last.at).toLocaleString('pt-BR')} · ${last.source}. Compras posteriores ao arquivo ainda não aparecem aqui.`
+    : 'Sem importação recente registrada. Os dados são atualizados por arquivo, sem conexão automática com o banco.';
+}
+
 function finItemHTML(f) {
   return `<div class="fin-item">
     <div class="fin-dot ${f.type}"></div>
     <div style="flex:1;min-width:0">
       <div class="item-name">${esc(f.desc)}</div>
-      <div class="item-meta">${[f.cat, f.date?new Date(f.date+'T00:00:00').toLocaleDateString('pt-BR'):''].filter(Boolean).join(' · ')}</div>
+      <div class="item-meta">${[f.cat, f.date?new Date(f.date+'T00:00:00').toLocaleDateString('pt-BR'):'', f.importSource ? 'Importado · '+f.importSource : 'Manual / sem origem'].filter(Boolean).map(esc).join(' · ')}</div>
     </div>
     <div class="item-actions">
       <span class="fin-amount ${f.type}">${f.type==='entrada'?'+':'−'}${fp(f.val)}</span>
@@ -1929,6 +1926,7 @@ initProfile();
 // ═══════ OFX / CSV IMPORTER ═══════
 let impFormat = 'ofx';
 let impRows   = [];
+let impIsNubank = false;
 
 function openImporter() {
   resetImporter();
@@ -1956,6 +1954,7 @@ function resetImporter() {
   $('imp-bank-badge').innerHTML = '';
   $('imp-summary').innerHTML = '';
   impRows = [];
+  $('imp-source-section').style.display = 'none';
 }
 
 // ── Category inference ──
@@ -2046,12 +2045,13 @@ function parseCSV(text) {
   };
 
   const iDate  = findCol('data','date','dt');
-  const iDesc  = findCol('descrição','descricao','histórico','historico','memo','descrição','description','lançamento','lancamento');
+  const iDesc  = findCol('title','descrição','descricao','histórico','historico','memo','descrição','description','lançamento','lancamento');
   const iVal   = findCol('valor','value','amount','quantia','transação','transacao');
   const iType  = findCol('tipo','type','natureza','operação','operacao','crédito','debito','débito','credit');
   const iValIn = findCol('entrada','crédito','credito','credit','valor.entrada');
   const iValOut= findCol('saída','saida','débito','debito','debit','valor.saída');
 
+  const nubank = ['date','title','amount'].every(h => headers.includes(h));
   const rows = [];
 
   for(let i = 1; i < lines.length; i++) {
@@ -2079,7 +2079,8 @@ function parseCSV(text) {
       isCredit = n > 0 || /crédito|credit|entrada|receb/i.test(typeStr);
       if(/débito|debit|saída|pagam/i.test(typeStr)) isCredit = false;
     }
-    if(!amount) continue;
+    if(!Number.isFinite(amount) || !amount) continue;
+    if(nubank) isCredit = parseBrNum(rawVal) < 0;
 
     // Parse date
     let isoDate = new Date().toISOString().slice(0,10);
@@ -2088,6 +2089,8 @@ function parseCSV(text) {
     rows.push({
       date: isoDate,
       dateDisplay: isoDate.split('-').reverse().join('/'),
+      sourceKind: nubank ? 'nubank-card' : 'statement',
+      payment: nubank && /pagamento\s+recebido/i.test(desc),
       desc: desc || 'Sem descrição',
       amount,
       type: isCredit ? 'entrada' : 'saida',
@@ -2189,24 +2192,52 @@ async function handleImportFile(inp) {
   }
 
   // Add IDs
-  impRows = rows.map((r,i) => ({...r, id:i}));
+  impIsNubank = rows.some(r => r.sourceKind === 'nubank-card');
+  $('imp-source-section').style.display = 'block';
+  impRows = rows.map((r,i) => ({...r, id:i, selected: true}));
+  reconcileImport();
   $('imp-status').textContent = '';
   $('imp-preview-section').style.display = 'block';
 
-  const bank = detectBankFromText(text);
+  const bank = impIsNubank ? 'Nubank — fatura do cartão' : detectBankFromText(text);
   $('imp-bank-badge').innerHTML = `<div class="pdf-bank-badge">${bank ? '🏦 '+bank+' detectado' : '🏦 Banco não identificado — revise os dados'}</div>`;
 
   renderImpRows();
   updateImpSummary();
 }
 
+// Match occurrences one by one: two identical purchases may both be legitimate.
+function importKey(date, desc, amount, type) {
+  return JSON.stringify([date, String(desc).normalize('NFC').trim().replace(/\s+/g,' ').toLowerCase(), Math.round(amount * 100), type]);
+}
+function reconcileImport() {
+  const source = $('imp-source').value.trim();
+  const used = new Set();
+  for(const r of impRows) {
+    const key = importKey(r.date,r.desc,r.amount,r.type);
+    const index = D.fin.findIndex((f,i) => !used.has(i) && f.importSource === source && importKey(f.date,f.desc,f.val,f.type) === key);
+    if(index >= 0) used.add(index);
+    r.status = r.payment ? 'payment' : index >= 0 ? 'existing' : D.fin.some(f =>
+      (!f.importSource || f.importSource === source) && f.date === r.date &&
+      (Math.round(f.val*100) === Math.round(r.amount*100) || String(f.desc).trim().toLowerCase() === r.desc.trim().toLowerCase())
+    ) ? 'review' : 'new';
+    r.checked = !['payment','existing','review'].includes(r.status) && r.selected !== false;
+  }
+}
+function refreshImportSource() {
+  reconcileImport(); renderImpRows(); updateImpSummary();
+}
+function importStatusLabel(r) {
+  return {payment:'Pagamento da fatura — não importar como renda', existing:'Já importada', review:'Revisar: possível repetição ou alteração', new:'Nova'}[r.status];
+}
+
 function renderImpRows() {
   const CATS = ['Alimentação','Transporte','Moradia','Saúde','Lazer','Assinaturas','Eletrônicos','Roupas','Jogos','Salário','Freelance','Investimento','Venda','Presente','Outros'];
   $('imp-rows').innerHTML = impRows.map(r => `
     <tr class="${r.checked?'':'row-disabled'}" id="imp-row-${r.id}">
-      <td><input type="checkbox" class="pdf-check" ${r.checked?'checked':''} onchange="toggleImpRow(${r.id},this)"/></td>
+      <td><input type="checkbox" class="pdf-check" ${r.checked?'checked':''} ${['payment','existing'].includes(r.status)?'disabled':''} onchange="toggleImpRow(${r.id},this)"/></td>
       <td style="white-space:nowrap;color:var(--text2);font-size:12px">${esc(r.dateDisplay)}</td>
-      <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px" title="${esc(r.desc)}">${esc(r.desc)}</td>
+      <td style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12px" title="${esc(r.desc)}">${esc(r.desc)}<br><small>${importStatusLabel(r)}</small></td>
       <td><select style="font-size:11px;padding:3px 6px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--text)" onchange="setImpRowCat(${r.id},this.value)">
         ${CATS.map(c=>`<option${c===r.cat?' selected':''}>${c}</option>`).join('')}
       </select></td>
@@ -2221,19 +2252,20 @@ function renderImpRows() {
 }
 
 function toggleImpRow(id, cb) {
-  const r = impRows.find(r=>r.id===id); if(r){ r.checked=cb.checked; renderImpRows(); updateImpSummary(); }
+  const r = impRows.find(r=>r.id===id); if(r && !['payment','existing'].includes(r.status)){ r.selected=cb.checked; r.checked=cb.checked; renderImpRows(); updateImpSummary(); }
 }
 function toggleAllImpRows(cb) {
-  impRows.forEach(r=>r.checked=cb.checked); renderImpRows(); updateImpSummary();
+  impRows.forEach(r=>{ if(r.status === 'new') { r.selected=cb.checked; r.checked=cb.checked; } }); renderImpRows(); updateImpSummary();
 }
 function setImpRowCat(id, val) { const r=impRows.find(r=>r.id===id); if(r) r.cat=val; }
-function setImpRowType(id, val) { const r=impRows.find(r=>r.id===id); if(r){ r.type=val; renderImpRows(); updateImpSummary(); } }
+function setImpRowType(id, val) { const r=impRows.find(r=>r.id===id); if(r){ r.type=val; reconcileImport(); renderImpRows(); updateImpSummary(); } }
 
 function updateImpSummary() {
   const sel = impRows.filter(r=>r.checked);
   const ent = sel.filter(r=>r.type==='entrada').reduce((a,r)=>a+r.amount,0);
   const sai = sel.filter(r=>r.type==='saida').reduce((a,r)=>a+r.amount,0);
   $('imp-summary').innerHTML = `
+    <span>${impRows.filter(r=>r.status==='existing').length} já importadas · ${impRows.filter(r=>r.status==='review').length} para revisar · ${impRows.filter(r=>r.payment).length} pagamentos excluídos</span>
     <span>✅ <strong>${sel.length}</strong> de ${impRows.length} selecionadas</span>
     <span>⬆️ Entradas: <strong style="color:var(--green)">${fp(ent)}</strong></span>
     <span>⬇️ Saídas: <strong style="color:var(--red)">${fp(sai)}</strong></span>
@@ -2241,10 +2273,20 @@ function updateImpSummary() {
 }
 
 function confirmImport() {
-  const sel = impRows.filter(r=>r.checked);
+  const source = $('imp-source').value.trim();
+  if(!source) { toast('⚠️ Informe qual conta ou cartão está importando.'); return; }
+  // Recheck against current saved data without losing explicit review choices.
+  const choices = new Set(impRows.filter(r=>r.checked).map(r=>r.id));
+  reconcileImport();
+  const sel = impRows.filter(r=>choices.has(r.id) && !['existing','payment'].includes(r.status));
+  if(sel.some(r=>r.status==='review') && !confirm('Há possíveis repetições ou alterações selecionadas. Adicionar como novos lançamentos? Os anteriores serão mantidos.')) return;
   if(!sel.length) { toast('⚠️ Nenhuma transação selecionada.'); return; }
-  sel.forEach(r => D.fin.push({ id:uid(), desc:r.desc, val:r.amount, type:r.type, cat:r.cat, date:r.date }));
+  sel.forEach(r => D.fin.push({ id:uid(), desc:r.desc, val:r.amount, type:r.type, cat:r.cat, date:r.date, importSource:source, importKind:r.sourceKind || 'statement' }));
+  try { localStorage.setItem('hub_fin_last_import', JSON.stringify({at:new Date().toISOString(),source})); } catch(e) { /* Import status is optional when storage is full. */ }
   save('fin'); renderFinance(); renderIncomeWidget();
+  const latestMonth = sel.map(r=>r.date.slice(0,7)).sort().pop();
+  if($('fin-month') && latestMonth) { $('fin-month').value = latestMonth; renderFinance(); }
+  refreshImportSource();
   closeImporter();
   toast(`✅ ${sel.length} transação(ões) importada(s) com sucesso!`);
 }
