@@ -1,28 +1,41 @@
 // ═══════ DATA ═══════
-const D = {
-  attendance: JSON.parse(localStorage.getItem('hub_attendance')||'[]'),
-  diet: JSON.parse(localStorage.getItem('hub_diet')||'[]'),
-  workout: JSON.parse(localStorage.getItem('hub_workout')||'[]'),
-  wish: JSON.parse(localStorage.getItem('hub_wish')||'[]'),
-  col:  JSON.parse(localStorage.getItem('hub_col')||'[]'),
-  mv:   JSON.parse(localStorage.getItem('hub_mv')||'[]'),
-  bk:   JSON.parse(localStorage.getItem('hub_bk')||'[]'),
-  fin:  JSON.parse(localStorage.getItem('hub_fin')||'[]'),
-  sh:   JSON.parse(localStorage.getItem('hub_sh')||'[]'),
-  ot:   JSON.parse(localStorage.getItem('hub_ot')||'[]'),
-  gl:   JSON.parse(localStorage.getItem('hub_gl')||'[]'),
-};
-const save = k => {
+const blockedData = new Set();
+let restoreBlocked = false;
+try { DataSafety.recover(localStorage); } catch(error) { restoreBlocked = true; }
+function loadData(key) {
   try {
-    localStorage.setItem('hub_'+k, JSON.stringify(D[k]));
-  } catch(e) {
-    if(e.name === 'QuotaExceededError' || e.code === 22) {
-      toast('⚠️ Armazenamento cheio! Exporte um backup e remova itens com capa para liberar espaço.');
-    } else {
-      toast('❌ Erro ao salvar. Tente novamente.');
-    }
+    const raw = localStorage.getItem('hub_'+key);
+    return raw === null ? [] : DataSafety.collection(key,JSON.parse(raw));
+  } catch(error) {
+    // Preserve the original bytes for recovery; never overwrite unreadable data.
+    blockedData.add(key);
+    return [];
   }
-};
+}
+const D = Object.fromEntries(DataSafety.keys.map(key=>[key,loadData(key)]));
+const committedData = Object.fromEntries(DataSafety.keys.map(key=>[key,JSON.stringify(D[key])]));
+function storageError(error) {
+  toast(error.name === 'QuotaExceededError' || error.code === 22
+    ? '⚠️ Não foi possível salvar: armazenamento cheio. Seus dados anteriores foram mantidos.'
+    : '❌ Não foi possível salvar. Seus dados anteriores foram mantidos.');
+}
+function save(key) {
+  try {
+    if(restoreBlocked || blockedData.has(key)) throw new Error('Dados em recuperação');
+    const next = DataSafety.collection(key,D[key]);
+    if(key === 'fin') persistFinanceRecords(next,JSON.parse(committedData.fin));
+    else DataSafety.write(localStorage,'hub_'+key,next);
+    D[key] = next;
+    committedData[key] = JSON.stringify(next);
+    return true;
+  } catch(error) {
+    D[key] = JSON.parse(committedData[key]);
+    restoreBlocked = localStorage.getItem(DataSafety.journalKey) !== null;
+    storageError(error);
+    if(restoreBlocked) showDataRecoveryNotice();
+    return false;
+  }
+}
 
 // ═══════ STATE ═══════
 const F = { w:'all',c:'all',mv:'all',bk:'all',fin:'all',sh:'all',ot:'all',gl:'all' };
@@ -228,11 +241,11 @@ function clearCover(pfx) {
 
 // ═══════ RENDER HELPERS ═══════
 function thumbHTML(cover, emoji) {
-  if(cover) return `<div class="item-thumb"><img src="${cover}" onclick="openLb(this.src)" style="cursor:zoom-in"/></div>`;
+  if(cover) return `<div class="item-thumb"><img src="${esc(DataSafety.image(cover))}" onclick="openLb(this.src)" style="cursor:zoom-in"/></div>`;
   return `<div class="item-thumb">${emoji}</div>`;
 }
 function gridCoverHTML(cover, emoji, badge, sub) {
-  const inner = cover ? `<img src="${cover}" onclick="openLb(this.src)" style="cursor:zoom-in"/>` : emoji;
+  const inner = cover ? `<img src="${esc(DataSafety.image(cover))}" onclick="openLb(this.src)" style="cursor:zoom-in"/>` : emoji;
   return `<div class="grid-cover">${inner}${sub?`<span class="g-platform">${esc(sub)}</span>`:''}</div>`;
 }
 function emptyHTML(msg) {
@@ -251,13 +264,27 @@ function addWish() {
   D.wish.push({id:uid(),name,platform:$('w-plat').value,priority:$('w-prio').value,
     price:parseFloat($('w-price').value)||0,genre:$('w-genre').value.trim(),
     note:$('w-note').value.trim(),cover:covers['w']||null,addedAt:today()});
+  if(!save('wish')) return;
   ['w-name','w-price','w-genre','w-note'].forEach(id=>$(id).value='');
   $('w-plat').value=''; $('w-prio').value='média'; clearCover('w');
-  save('wish'); renderWish(); toast('✅ Jogo adicionado à wishlist!');
+  renderWish(); toast('✅ Jogo adicionado à wishlist!');
 }
 function delWish(id) {
   if(!confirm('Remover?')) return;
-  D.wish=D.wish.filter(g=>g.id!==id); save('wish'); renderWish(); toast('🗑️ Removido');
+  D.wish=D.wish.filter(g=>g.id!==id); if(!save('wish')) return; renderWish(); toast('🗑️ Removido');
+}
+function saveCollectionMove() {
+  try {
+    if(restoreBlocked || blockedData.has('wish') || blockedData.has('col')) throw new Error('Dados em recuperação');
+    const wish=DataSafety.collection('wish',D.wish), col=DataSafety.collection('col',D.col);
+    DataSafety.batch(localStorage,{hub_wish:JSON.stringify(wish),hub_col:JSON.stringify(col)});
+    D.wish=wish;D.col=col;committedData.wish=JSON.stringify(wish);committedData.col=JSON.stringify(col);
+    return true;
+  } catch(error) {
+    D.wish=JSON.parse(committedData.wish);D.col=JSON.parse(committedData.col);
+    restoreBlocked=localStorage.getItem(DataSafety.journalKey)!==null;
+    storageError(error);showDataRecoveryNotice();return false;
+  }
 }
 function moveToCol(id) {
   const g=D.wish.find(g=>g.id===id); if(!g) return;
@@ -265,7 +292,7 @@ function moveToCol(id) {
   D.col.push({id:uid(),name:g.name,platform:g.platform,genre:g.genre,price:g.price,
     note:g.note,cover:g.cover,played:'nao',addedAt:today()});
   D.wish=D.wish.filter(x=>x.id!==id);
-  save('wish'); save('col'); renderWish(); renderCol(); toast('🎮 Movido para a coleção!');
+  if(!saveCollectionMove()) return; renderWish(); renderCol(); toast('🎮 Movido para a coleção!');
 }
 function renderWish() {
   const s=$('w-search').value.toLowerCase();
@@ -310,20 +337,21 @@ function addCol() {
     price:parseFloat($('c-price').value)||0,played:$('c-status').value,
     note:$('c-note').value.trim(),cover:covers['c']||null,
     rating:parseInt($('c-stars').dataset.val)||0,addedAt:today()});
+  if(!save('col')) return;
   ['c-name','c-price','c-genre','c-note'].forEach(id=>$(id).value='');
   $('c-plat').value=''; $('c-status').value='nao'; clearCover('c');
   setFormStar('c',0);
-  save('col'); renderCol(); toast('✅ Adicionado à coleção!');
+  renderCol(); toast('✅ Adicionado à coleção!');
 }
 function delCol(id) {
   if(!confirm('Remover?')) return;
-  D.col=D.col.filter(g=>g.id!==id); save('col'); renderCol(); toast('🗑️ Removido');
+  D.col=D.col.filter(g=>g.id!==id); if(!save('col')) return; renderCol(); toast('🗑️ Removido');
 }
 function cycleStatus(id) {
   const g=D.col.find(g=>g.id===id); if(!g) return;
   const cy=['nao','jogando','parei','zerado','platinado'];
   g.played=cy[(cy.indexOf(g.played)+1)%cy.length];
-  save('col'); renderCol();
+  if(!save('col')) return; renderCol();
 }
 
 const statusLbl = s=>({nao:'⏳ Não joguei',jogando:'🎮 Jogando',parei:'🛑 Joguei e parei',zerado:'🏆 Zerado',platinado:'💎 Platinado'}[s]||s);
@@ -337,7 +365,7 @@ function renderGamesList(elId, list, type, view) {
 
   const actions = g => isWish
     ? `${iconBtn('edit-btn','Mover p/ coleção',MOVE_ICO,`moveToCol(${g.id})`)}${iconBtn('edit-btn','Editar',EDIT_ICO,`openEdit('wish',${g.id})`)}${iconBtn('','Remover',DEL_ICO,`delWish(${g.id})`)}`
-    : `<span class="badge ${statusCls(g.played)} clickable" onclick="cycleStatus(${g.id})" title="Clique para mudar">${statusLbl(g.played)}</span>${iconBtn('edit-btn','Editar',EDIT_ICO,`openEdit('col',${g.id})`)}${iconBtn('','Remover',DEL_ICO,`delCol(${g.id})`)}`;
+    : `<span class="badge ${statusCls(g.played)} clickable" onclick="cycleStatus(${g.id})" title="Clique para mudar">${esc(statusLbl(g.played))}</span>${iconBtn('edit-btn','Editar',EDIT_ICO,`openEdit('col',${g.id})`)}${iconBtn('','Remover',DEL_ICO,`delCol(${g.id})`)}`;
 
   if(view==='grid') {
     const badge = isWish
@@ -346,7 +374,7 @@ function renderGamesList(elId, list, type, view) {
     el.innerHTML=`<div class="items-grid">${list.map(g=>`
       <div class="grid-card">
         ${gridCoverHTML(g.cover,platEmoji(g.platform),null,g.platform)}
-        ${isWish?`<div class="grid-status"><span class="badge ${prioCls(g.priority)}">${g.priority}</span></div>`:''}
+        ${isWish?`<div class="grid-status"><span class="badge ${prioCls(g.priority)}">${esc(g.priority)}</span></div>`:''}
         <div class="grid-body">
           <div class="grid-name">${esc(g.name)}</div>
           <div class="grid-meta">${esc(g.genre||'')}</div>
@@ -363,13 +391,13 @@ function renderGamesList(elId, list, type, view) {
         <div class="item-inner">
           <div class="item-body">
             <div class="item-name">${esc(g.name)}</div>
-            <div class="item-meta">${[g.genre,g.platform,g.addedAt?'Adicionado '+g.addedAt:''].filter(Boolean).join(' · ')}</div>
+            <div class="item-meta">${[g.genre,g.platform,g.addedAt?'Adicionado '+g.addedAt:''].filter(Boolean).map(esc).join(' · ')}</div>
             ${g.note?`<div class="item-note">${esc(g.note)}</div>`:''}
             ${!isWish&&g.rating?starDisplayHTML(g.rating):''}
           </div>
           <div class="item-actions">
             ${g.price>0?`<span style="font-size:13px;font-weight:700;color:var(--accent);white-space:nowrap">${fp(g.price)}</span>`:''}
-            ${isWish?`<span class="badge ${prioCls(g.priority)}">${g.priority}</span>`:''}
+            ${isWish?`<span class="badge ${prioCls(g.priority)}">${esc(g.priority)}</span>`:''}
             ${actions(g)}
           </div>
         </div>
@@ -389,13 +417,14 @@ function addMovie() {
   D.mv.push({id:uid(),name,type:$('mv-type').value,status:$('mv-status').value,
     genre:$('mv-genre').value.trim(),platform:$('mv-plat').value.trim(),
     score:parseInt($('mv-score').value)||0,cover:covers['mv']||null,addedAt:today()});
+  if(!save('mv')) return;
   ['mv-name','mv-genre','mv-plat','mv-score'].forEach(id=>$(id).value='');
   $('mv-type').value='filme'; $('mv-status').value='quero'; clearCover('mv');
-  save('mv'); renderMovies(); toast('✅ Título adicionado!');
+  renderMovies(); toast('✅ Título adicionado!');
 }
 function delMovie(id) {
   if(!confirm('Remover?')) return;
-  D.mv=D.mv.filter(m=>m.id!==id); save('mv'); renderMovies(); toast('🗑️ Removido');
+  D.mv=D.mv.filter(m=>m.id!==id); if(!save('mv')) return; renderMovies(); toast('🗑️ Removido');
 }
 function renderMovies() {
   const s=$('mv-search').value.toLowerCase();
@@ -417,7 +446,7 @@ function renderMovies() {
     el.innerHTML=`<div class="items-grid">${list.map(m=>`
       <div class="grid-card">
         ${gridCoverHTML(m.cover,m.type==='serie'?'📺':m.type==='anime'?'⛩️':m.type==='doc'?'🎥':'🎬',null,m.platform||m.type)}
-        <div class="grid-status"><span class="badge ${mvStatusCls(m.status)}">${mvStatusLbl(m.status)}</span></div>
+        <div class="grid-status"><span class="badge ${mvStatusCls(m.status)}">${esc(mvStatusLbl(m.status))}</span></div>
         <div class="grid-body">
           <div class="grid-name">${esc(m.name)}</div>
           <div class="grid-meta">${esc(m.genre||'')}${m.score?` · ⭐${m.score}`:''}</div>
@@ -431,10 +460,10 @@ function renderMovies() {
         <div class="item-inner">
           <div class="item-body">
             <div class="item-name">${esc(m.name)}</div>
-            <div class="item-meta">${[mvTypeLbl(m.type),m.genre,m.platform,m.score?'⭐'+m.score:''].filter(Boolean).join(' · ')}</div>
+            <div class="item-meta">${[mvTypeLbl(m.type),m.genre,m.platform,m.score?'⭐'+m.score:''].filter(Boolean).map(esc).join(' · ')}</div>
           </div>
           <div class="item-actions">
-            <span class="badge ${mvStatusCls(m.status)}">${mvStatusLbl(m.status)}</span>
+            <span class="badge ${mvStatusCls(m.status)}">${esc(mvStatusLbl(m.status))}</span>
             ${iconBtn('edit-btn','Editar',EDIT_ICO,`openEdit('mv',${m.id})`)}${iconBtn('','Remover',DEL_ICO,`delMovie(${m.id})`)}
           </div>
         </div>
@@ -451,13 +480,14 @@ function addBook() {
   D.bk.push({id:uid(),name,author:$('bk-author').value.trim(),status:$('bk-status').value,
     genre:$('bk-genre').value.trim(),pages:parseInt($('bk-pages').value)||0,
     score:parseInt($('bk-score').value)||0,cover:covers['bk']||null,addedAt:today()});
+  if(!save('bk')) return;
   ['bk-name','bk-author','bk-genre','bk-pages','bk-score'].forEach(id=>$(id).value='');
   $('bk-status').value='quero'; clearCover('bk');
-  save('bk'); renderBooks(); toast('✅ Livro adicionado!');
+  renderBooks(); toast('✅ Livro adicionado!');
 }
 function delBook(id) {
   if(!confirm('Remover?')) return;
-  D.bk=D.bk.filter(b=>b.id!==id); save('bk'); renderBooks(); toast('🗑️ Removido');
+  D.bk=D.bk.filter(b=>b.id!==id); if(!save('bk')) return; renderBooks(); toast('🗑️ Removido');
 }
 function renderBooks() {
   const s=$('bk-search').value.toLowerCase();
@@ -479,7 +509,7 @@ function renderBooks() {
     el.innerHTML=`<div class="items-grid">${list.map(b=>`
       <div class="grid-card">
         ${gridCoverHTML(b.cover,'📚',null,b.author||'')}
-        <div class="grid-status"><span class="badge ${bkStatusCls(b.status)}">${bkStatusLbl(b.status)}</span></div>
+        <div class="grid-status"><span class="badge ${bkStatusCls(b.status)}">${esc(bkStatusLbl(b.status))}</span></div>
         <div class="grid-body">
           <div class="grid-name">${esc(b.name)}</div>
           <div class="grid-meta">${esc(b.author||'')}${b.score?` · ⭐${b.score}`:''}</div>
@@ -493,10 +523,10 @@ function renderBooks() {
         <div class="item-inner">
           <div class="item-body">
             <div class="item-name">${esc(b.name)}</div>
-            <div class="item-meta">${[b.author,b.genre,b.pages?b.pages+' pgs':'',b.score?'⭐'+b.score:''].filter(Boolean).join(' · ')}</div>
+            <div class="item-meta">${[b.author,b.genre,b.pages?b.pages+' pgs':'',b.score?'⭐'+b.score:''].filter(Boolean).map(esc).join(' · ')}</div>
           </div>
           <div class="item-actions">
-            <span class="badge ${bkStatusCls(b.status)}">${bkStatusLbl(b.status)}</span>
+            <span class="badge ${bkStatusCls(b.status)}">${esc(bkStatusLbl(b.status))}</span>
             ${iconBtn('edit-btn','Editar',EDIT_ICO,`openEdit('bk',${b.id})`)}${iconBtn('','Remover',DEL_ICO,`delBook(${b.id})`)}
           </div>
         </div>
@@ -506,11 +536,13 @@ function renderBooks() {
 
 // ═══════ FINANCE TAB ═══════
 function finTab(t) {
-  $('fpanel-extrato').style.display   = t==='extrato'   ? 'block' : 'none';
-  $('fpanel-historico').style.display = t==='historico' ? 'block' : 'none';
-  $('ftab-extrato').classList.toggle('active',   t==='extrato');
-  $('ftab-historico').classList.toggle('active', t==='historico');
+  for(const name of ['extrato','analise','historico']) {
+    $('fpanel-'+name).style.display = t===name ? 'block' : 'none';
+    $('ftab-'+name).classList.toggle('active',t===name);
+    $('ftab-'+name).setAttribute('aria-pressed',String(t===name));
+  }
   if(t==='historico') renderFinHistory();
+  if(t==='analise') renderFinanceAnalysis();
 }
 
 function renderFinHistory() {
@@ -587,13 +619,14 @@ function addFinance() {
   const val=parseFloat($('fin-val').value); if(!val||val<=0){$('fin-val').focus();toast('⚠️ Informe o valor');return;}
   D.fin.push({id:uid(),desc,val,type:finType,cat:$('fin-cat').value,
     date:$('fin-date').value||new Date().toISOString().slice(0,10)});
+  if(!save('fin')) return;
   ['fin-desc','fin-val'].forEach(id=>$(id).value='');
   $('fin-cat').value=''; $('fin-date').value='';
-  save('fin'); renderFinance(); toast(finType==='entrada'?'⬆️ Entrada registrada!':'⬇️ Saída registrada!');
+  renderFinance(); toast(finType==='entrada'?'⬆️ Entrada registrada!':'⬇️ Saída registrada!');
 }
 function delFinance(id) {
   if(!confirm('Remover?')) return;
-  D.fin=D.fin.filter(f=>f.id!==id); save('fin'); renderFinance(); toast('🗑️ Removido');
+  D.fin=D.fin.filter(f=>f.id!==id); if(!save('fin')) return; renderFinance(); toast('🗑️ Removido');
 }
 function renderFinance() {
   const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -655,6 +688,7 @@ function renderFinance() {
 
   // Sidebar income widget — always uses current month spending from extrato
   renderIncomeWidget();
+  renderFinanceAnalysisIfVisible();
 
   const el = $('fin-list');
   if(!list.length) {
@@ -719,16 +753,17 @@ function addShopping() {
   D.sh.push({id:uid(),name,qty:parseInt($('sh-qty').value)||1,
     price:parseFloat($('sh-price').value)||0,cat:$('sh-cat').value,
     done:false,addedAt:today()});
+  if(!save('sh')) return;
   ['sh-name','sh-price'].forEach(id=>$(id).value='');
   $('sh-qty').value='1'; $('sh-cat').value='';
-  save('sh'); renderShopping(); toast('✅ Item adicionado!');
+  renderShopping(); toast('✅ Item adicionado!');
 }
 function delShopping(id) {
   if(!confirm('Remover?')) return;
-  D.sh=D.sh.filter(s=>s.id!==id); save('sh'); renderShopping(); toast('🗑️ Removido');
+  D.sh=D.sh.filter(s=>s.id!==id); if(!save('sh')) return; renderShopping(); toast('🗑️ Removido');
 }
 function toggleShop(id) {
-  const s=D.sh.find(s=>s.id===id); if(s){s.done=!s.done; save('sh'); renderShopping();}
+  const s=D.sh.find(s=>s.id===id); if(s){s.done=!s.done; if(!save('sh')) return; renderShopping();}
 }
 function openEditShopping(id) {
   const i=D.sh.find(i=>i.id===id); if(!i) return;
@@ -762,7 +797,7 @@ function saveEditShopping(id) {
   i.cat   = $('esh-cat').value;
   i.qty   = parseInt($('esh-qty').value)||1;
   i.price = parseFloat($('esh-price').value)||0;
-  save('sh'); renderShopping(); closeModal(); toast('✅ Item atualizado!');
+  if(!save('sh')) return; renderShopping(); closeModal(); toast('✅ Item atualizado!');
 }
 function renderShopping() {
   const s=$('sh-search').value.toLowerCase();
@@ -792,7 +827,7 @@ function renderShopping() {
         <button class="check-btn${i.done?' checked':''}" onclick="toggleShop(${i.id})">${i.done?'✓':''}</button>
         <div class="item-body">
           <div class="item-name">${esc(i.name)}${i.qty>1?` <span style="color:var(--text3);font-weight:400">×${i.qty}</span>`:''}</div>
-          <div class="item-meta">${[i.cat,i.price>0?fp(i.price)+' un.':''].filter(Boolean).join(' · ')}</div>
+          <div class="item-meta">${[i.cat,i.price>0?fp(i.price)+' un.':''].filter(Boolean).map(esc).join(' · ')}</div>
         </div>
         <div class="item-actions">
           ${i.price>0&&i.qty>1?`<span style="font-size:13px;font-weight:700;color:var(--accent)">${fp(i.price*i.qty)}</span>`:(i.price>0?`<span style="font-size:13px;font-weight:700;color:var(--accent)">${fp(i.price)}</span>`:'')}
@@ -808,13 +843,14 @@ function addOther() {
   const name=$('ot-name').value.trim(); if(!name){$('ot-name').focus();toast('⚠️ Informe o nome');return;}
   D.ot.push({id:uid(),name,cat:$('ot-cat').value,price:parseFloat($('ot-price').value)||0,
     status:$('ot-status').value,priority:$('ot-prio').value,note:$('ot-note').value.trim(),addedAt:today()});
+  if(!save('ot')) return;
   ['ot-name','ot-price','ot-note'].forEach(id=>$(id).value='');
   $('ot-cat').value=''; $('ot-status').value='quero'; $('ot-prio').value='média';
-  save('ot'); renderOthers(); toast('✅ Item adicionado!');
+  renderOthers(); toast('✅ Item adicionado!');
 }
 function delOther(id) {
   if(!confirm('Remover?')) return;
-  D.ot=D.ot.filter(o=>o.id!==id); save('ot'); renderOthers(); toast('🗑️ Removido');
+  D.ot=D.ot.filter(o=>o.id!==id); if(!save('ot')) return; renderOthers(); toast('🗑️ Removido');
 }
 function renderOthers() {
   const s=$('ot-search').value.toLowerCase();
@@ -844,13 +880,13 @@ function renderOthers() {
       <div class="item-inner">
         <div class="item-body">
           <div class="item-name">${esc(o.name)}</div>
-          <div class="item-meta">${[o.cat,o.addedAt?'Adicionado '+o.addedAt:''].filter(Boolean).join(' · ')}</div>
+          <div class="item-meta">${[o.cat,o.addedAt?'Adicionado '+o.addedAt:''].filter(Boolean).map(esc).join(' · ')}</div>
           ${o.note?`<div class="item-note">${esc(o.note)}</div>`:''}
         </div>
         <div class="item-actions">
           ${o.price>0?`<span style="font-size:13px;font-weight:700;color:var(--accent)">${fp(o.price)}</span>`:''}
           <span class="badge ${o.status==='tenho'?'badge-green':'badge-amber'}">${o.status==='tenho'?'✅ Tenho':'🤩 Quero'}</span>
-          <span class="badge ${prioCls(o.priority)}">${o.priority}</span>
+          <span class="badge ${prioCls(o.priority)}">${esc(o.priority)}</span>
           ${iconBtn('edit-btn','Editar',EDIT_ICO,`openEdit('ot',${o.id})`)}${iconBtn('','Remover',DEL_ICO,`delOther(${o.id})`)}
         </div>
       </div>
@@ -863,13 +899,14 @@ function addGoal() {
   D.gl.push({id:uid(),name,cat:$('gl-cat').value,target:parseFloat($('gl-target').value)||0,
     current:parseFloat($('gl-current').value)||0,unit:$('gl-unit').value.trim(),
     deadline:$('gl-deadline').value,status:$('gl-status').value,addedAt:today()});
+  if(!save('gl')) return;
   ['gl-name','gl-target','gl-current','gl-unit','gl-deadline'].forEach(id=>$(id).value='');
   $('gl-cat').value=''; $('gl-status').value='ativa';
-  save('gl'); renderGoals(); toast('✅ Meta criada!');
+  renderGoals(); toast('✅ Meta criada!');
 }
 function delGoal(id) {
   if(!confirm('Remover meta?')) return;
-  D.gl=D.gl.filter(g=>g.id!==id); save('gl'); renderGoals(); toast('🗑️ Removida');
+  D.gl=D.gl.filter(g=>g.id!==id); if(!save('gl')) return; renderGoals(); toast('🗑️ Removida');
 }
 function renderGoals() {
   const s=$('gl-search').value.toLowerCase();
@@ -910,7 +947,7 @@ function renderGoals() {
         </div>
         ${g.target>0?`
           <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:4px">
-            <span>${g.current}${g.unit?' '+g.unit:''} de ${g.target}${g.unit?' '+g.unit:''}</span>
+            <span>${g.current}${g.unit?' '+esc(g.unit):''} de ${g.target}${g.unit?' '+esc(g.unit):''}</span>
             <span style="font-weight:700;color:var(--accent)">${pct}%</span>
           </div>
           <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
@@ -938,7 +975,7 @@ function saveCurrentEdit() {
     g.genre   = $('edit-genre').value.trim();
     g.note    = $('edit-note').value.trim();
     if(covers['edit']!==undefined) g.cover=covers['edit'];
-    save('wish'); renderWish();
+    if(!save('wish')) return; renderWish();
 
   } else if(type==='col') {
     const g=D.col.find(g=>g.id===id); if(!g) return;
@@ -950,7 +987,7 @@ function saveCurrentEdit() {
     g.note    = $('editc-note').value.trim();
     g.rating  = parseInt($('editc-stars')?.dataset.val)||0;
     if(covers['editc']!==undefined) g.cover=covers['editc'];
-    save('col'); renderCol();
+    if(!save('col')) return; renderCol();
 
   } else if(type==='mv') {
     const m=D.mv.find(m=>m.id===id); if(!m) return;
@@ -960,7 +997,7 @@ function saveCurrentEdit() {
     m.genre   = $('em-genre').value.trim();
     m.platform= $('em-plat').value.trim();
     m.score   = parseInt($('em-score').value)||0;
-    save('mv'); renderMovies();
+    if(!save('mv')) return; renderMovies();
 
   } else if(type==='bk') {
     const b=D.bk.find(b=>b.id===id); if(!b) return;
@@ -970,7 +1007,7 @@ function saveCurrentEdit() {
     b.genre = $('eb-genre').value.trim();
     b.pages = parseInt($('eb-pages').value)||0;
     b.score = parseInt($('eb-score').value)||0;
-    save('bk'); renderBooks();
+    if(!save('bk')) return; renderBooks();
 
   } else if(type==='ot') {
     const o=D.ot.find(o=>o.id===id); if(!o) return;
@@ -980,7 +1017,7 @@ function saveCurrentEdit() {
     o.status  = $('eo-status').value;
     o.priority= $('eo-prio').value;
     o.note    = $('eo-note').value.trim();
-    save('ot'); renderOthers();
+    if(!save('ot')) return; renderOthers();
 
   } else if(type==='gl') {
     const g=D.gl.find(g=>g.id===id); if(!g) return;
@@ -991,7 +1028,7 @@ function saveCurrentEdit() {
     g.unit    = $('egl-unit').value.trim();
     g.deadline= $('egl-deadline').value;
     g.status  = $('egl-status').value;
-    save('gl'); renderGoals();
+    if(!save('gl')) return; renderGoals();
 
   } else if(type==='sh') {
     const i=D.sh.find(i=>i.id===id); if(!i) return;
@@ -1000,7 +1037,7 @@ function saveCurrentEdit() {
     i.cat   = $('esh-cat').value;
     i.qty   = parseInt($('esh-qty').value)||1;
     i.price = parseFloat($('esh-price').value)||0;
-    save('sh'); renderShopping();
+    if(!save('sh')) return; renderShopping();
   }
 
   closeModal();
@@ -1116,6 +1153,7 @@ function toggleIncomePrivacy() {
   incomeHidden = !incomeHidden;
   localStorage.setItem('hub_income_hidden',String(incomeHidden));
   renderIncomeWidget();
+  renderFinanceAnalysisIfVisible();
 }
 
 function editIncome() {
@@ -1214,10 +1252,12 @@ function monthsOfIncome(val) { return income>0 ? (val/income).toFixed(1) : 0; }
 
 // ═══════ BACKUP ═══════
 function exportBackup() {
+  if(restoreBlocked || blockedData.size) { showDataRecoveryNotice(); toast('⚠️ Baixe a cópia de recuperação: há dados locais que precisam ser recuperados.'); return; }
   const backup = {
     version: 1,
     exportedAt: new Date().toISOString(),
     income: income,
+    analysis: readFinanceAnalysisSettings(),
     data: D
   };
   const json = JSON.stringify(backup, null, 2);
@@ -1236,40 +1276,61 @@ function importBackup(input) {
   const file = input.files[0];
   if(!file) return;
   const reader = new FileReader();
+  reader.onerror = () => { toast('❌ Não foi possível ler o backup. Nenhuma alteração foi aplicada.'); input.value=''; };
   reader.onload = e => {
+    let staged;
+    try { staged = DataSafety.backup(JSON.parse(e.target.result)); }
+    catch(error) { toast('❌ Backup inválido ou incompatível. Nenhuma alteração foi aplicada.'); input.value=''; return; }
+    if(!confirm('Restaurar este backup? As áreas presentes no arquivo vão substituir seus registros atuais. As demais serão mantidas.')) { input.value=''; return; }
+    const entries = Object.fromEntries(Object.entries(staged.data).map(([key,rows])=>['hub_'+key,JSON.stringify(rows)]));
+    if(DataSafety.own(staged,'income')) entries.hub_income=String(staged.income);
+    if(DataSafety.own(staged.data,'fin')) entries.hub_fin_analysis=JSON.stringify(staged.analysis || {completedMonths:[]});
     try {
-      const backup = JSON.parse(e.target.result);
-      if(!backup.data) throw new Error('Arquivo inválido');
-      if(!confirm(`Importar backup de ${backup.exportedAt ? new Date(backup.exportedAt).toLocaleString('pt-BR') : 'data desconhecida'}?\n\nIsso vai SUBSTITUIR todos os dados atuais.`)) {
-        input.value = ''; return;
-      }
-      // Restore all data
-      const keys = ['wish','col','mv','bk','fin','sh','ot','gl','attendance','diet','workout'];
-      validateHealthBackup(backup.data);
-      keys.forEach(k => {
-        if(backup.data[k]) {
-          D[k] = backup.data[k];
-          save(k);
-        }
-      });
-      if(backup.income) {
-        income = backup.income;
-        localStorage.setItem('hub_income', income);
-      }
-      // Re-render everything
-      renderIncomeWidget();
-      renderWish(); renderCol(); renderMovies(); renderBooks();
-      renderFinance(); renderShopping(); renderOthers(); renderGoals();
-      resetHealthForm('diet'); resetHealthForm('workout'); renderHealth();
-      input.value = '';
-      toast('✅ Backup importado com sucesso!');
-    } catch(err) {
-      toast('❌ Arquivo inválido ou corrompido');
-      input.value = '';
+      DataSafety.batch(localStorage,entries);
+    } catch(error) {
+      restoreBlocked = localStorage.getItem(DataSafety.journalKey) !== null;
+      if(restoreBlocked) toast('❌ Restauração interrompida. Baixe a cópia de recuperação e reabra o aplicativo antes de continuar.');
+      else storageError(error);
+      showDataRecoveryNotice();
+      input.value='';
+      return;
     }
+    for(const [key,rows] of Object.entries(staged.data)) {
+      D[key]=rows;
+      committedData[key]=JSON.stringify(rows);
+      blockedData.delete(key);
+    }
+    restoreBlocked=false;
+    if(DataSafety.own(staged,'income')) income=staged.income;
+    renderIncomeWidget();
+    renderWish(); renderCol(); renderMovies(); renderBooks();
+    renderFinance(); renderShopping(); renderOthers(); renderGoals();
+    resetHealthForm('diet'); resetHealthForm('workout'); renderHealth();
+    showDataRecoveryNotice();
+    input.value='';
+    toast('✅ Backup restaurado com sucesso!');
   };
   reader.readAsText(file);
 }
+
+function showDataRecoveryNotice() {
+  let notice = $('data-recovery-notice');
+  if(!restoreBlocked && !blockedData.size) { if(notice) notice.remove(); return; }
+  if(!notice) {
+    notice=document.createElement('div');notice.id='data-recovery-notice';notice.className='data-recovery-notice';notice.setAttribute('role','alert');
+    const message=document.createElement('p');
+    message.textContent='Alguns dados locais não puderam ser carregados. Os originais foram preservados. Baixe uma cópia de recuperação antes de restaurar um backup válido.';
+    const button=document.createElement('button');button.type='button';button.className='btn btn-secondary';button.textContent='Baixar cópia de recuperação';button.addEventListener('click',exportRecoveryData);
+    notice.append(message,button);document.querySelector('.main').prepend(notice);
+  }
+}
+function exportRecoveryData() {
+  const rawStorage={};
+  for(const key of [...DataSafety.keys.map(key=>'hub_'+key),'hub_income','hub_fin_analysis',DataSafety.journalKey]) rawStorage[key]=localStorage.getItem(key);
+  const url=URL.createObjectURL(new Blob([JSON.stringify({recoveryVersion:1,rawStorage},null,2)],{type:'application/json'}));
+  const link=document.createElement('a');link.href=url;link.download='meu-organizador-recuperacao.json';link.click();URL.revokeObjectURL(url);
+}
+document.addEventListener('DOMContentLoaded',showDataRecoveryNotice);
 
 // ═══════ INVESTIMENTOS ═══════
 function investTab(t) {
@@ -1576,11 +1637,11 @@ function renderGSResults(games) {
       data-plats="${esc(plats)}"
       onclick="selectGSGame(this)">
       <div class="gs-result-cover">
-        ${cover ? `<img src="${cover}" alt="" loading="lazy" onerror="this.parentNode.innerHTML='🎮'"/>` : '🎮'}
+        ${cover ? `<img src="${esc(DataSafety.image(cover))}" alt="" loading="lazy" onerror="this.parentNode.innerHTML='🎮'"/>` : '🎮'}
       </div>
       <div class="gs-result-info">
         <div class="gs-result-name">${esc(g.name)}</div>
-        <div class="gs-result-meta">${[genres, plats].filter(Boolean).join(' · ')}</div>
+        <div class="gs-result-meta">${[genres, plats].filter(Boolean).map(esc).join(' · ')}</div>
         ${rating ? `<div class="gs-result-rating">${rating}</div>` : ''}
       </div>
     </div>`;
@@ -2276,8 +2337,9 @@ function confirmImport() {
   if(sel.some(r=>r.status==='review') && !confirm('Há possíveis repetições ou alterações selecionadas. Adicionar como novos lançamentos? Os anteriores serão mantidos.')) return;
   if(!sel.length) { toast('⚠️ Nenhuma transação selecionada.'); return; }
   sel.forEach(r => D.fin.push({ id:uid(), desc:r.desc, val:r.amount, type:r.type, cat:r.cat, date:r.date, importSource:source, importKind:r.sourceKind || 'statement' }));
+  if(!save('fin')) return;
   try { localStorage.setItem('hub_fin_last_import', JSON.stringify({at:new Date().toISOString(),source})); } catch(e) { /* Import status is optional when storage is full. */ }
-  save('fin'); renderFinance(); renderIncomeWidget();
+  renderFinance(); renderIncomeWidget();
   const latestMonth = sel.map(r=>r.date.slice(0,7)).sort().pop();
   if($('fin-month') && latestMonth) { $('fin-month').value = latestMonth; renderFinance(); }
   refreshImportSource();

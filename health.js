@@ -41,6 +41,7 @@ function selectHealthMonth() {
 }
 // Commit before updating the screen; a storage failure leaves the saved state intact.
 function commitHealth(kind, records) {
+  if(restoreBlocked || blockedData.has(kind)) { showDataRecoveryNotice(); toast('❌ Recupere os dados locais antes de salvar nesta área.'); return false; }
   try { localStorage.setItem('hub_'+kind, JSON.stringify(records)); }
   catch(error) { toast('❌ Não foi possível salvar. Verifique o armazenamento e tente novamente.'); return false; }
   D[kind] = records;

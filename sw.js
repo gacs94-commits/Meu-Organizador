@@ -1,8 +1,10 @@
-const CACHE_NAME = 'meu-organizador-v13-income-privacy';
+const CACHE_NAME = 'meu-organizador-v15-month-analysis';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
+  './data-safety.js',
+  './finance-analysis.js',
   './app.js',
   './health.js',
   './mobile.js',

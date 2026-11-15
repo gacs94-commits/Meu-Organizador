@@ -884,3 +884,47 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   #income-mobile-slot .income-privacy{grid-column:2;grid-row:1 / 3;width:40px;height:44px;border:0;background:var(--surface);border-radius:9px;color:var(--accent)}
   #income-mobile-slot .income-inline-input{grid-column:1;grid-row:2;min-width:0;width:100%;height:28px;font-size:17px}
 }
+
+.data-recovery-notice{width:100%;max-width:var(--content-max);padding:16px;margin-bottom:20px;border:1px solid var(--amber-border);border-radius:var(--radius);background:var(--amber-light);color:var(--text);font-size:13px;line-height:1.6}
+.data-recovery-notice .btn{margin-top:10px}
+
+/* Monthly analysis keeps explanations close to the numbers they qualify. */
+.analysis-period{min-width:180px}
+.analysis-period select{padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text);font:inherit}
+.analysis-muted{font-size:12px;line-height:1.6;color:var(--text2);margin-top:10px}
+.analysis-status{border-left:3px solid var(--amber);padding:18px}
+.analysis-status-label{font-size:13px;font-weight:700;color:var(--amber);margin-bottom:12px}
+.analysis-status-label.is-complete{color:var(--green)}
+.analysis-status:has(.analysis-status-label.is-complete){border-left-color:var(--green)}
+.analysis-complete-control{display:flex;align-items:center;gap:10px;font-size:13px;line-height:1.5;cursor:pointer;min-height:44px}
+.analysis-complete-control input{width:20px;height:20px;accent-color:var(--accent);flex-shrink:0}
+.analysis-overview{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:16px}
+.analysis-overview>.card{min-width:0}
+.analysis-total>strong{display:block;font-size:32px;font-weight:800;letter-spacing:-1px;color:var(--accent);overflow-wrap:anywhere}
+.analysis-income-value{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.analysis-income-value strong{font-size:28px;color:var(--accent)}
+.analysis-income-value span{font-size:12px;color:var(--text2);line-height:1.5}
+#analysis-income>p,#analysis-comparison>p{font-size:13px;line-height:1.6}
+#analysis-income>progress{margin-bottom:12px}
+.analysis-insight{font-size:14px;line-height:1.6;margin-bottom:18px;color:var(--text)}
+.analysis-category{margin:16px 0}
+.analysis-category>div{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font-size:13px;margin-bottom:8px}
+.analysis-category>div>span{overflow-wrap:anywhere;min-width:0}
+.analysis-category strong{flex-shrink:0;text-align:right}
+.analysis-category small{color:var(--text2);font-weight:400}
+#fpanel-analise progress{display:block;width:100%;height:8px;appearance:none;border:0;border-radius:8px;overflow:hidden;background:var(--surface3);color:var(--accent)}
+#fpanel-analise progress::-webkit-progress-bar{background:var(--surface3)}
+#fpanel-analise progress::-webkit-progress-value{background:var(--accent);border-radius:8px}
+#fpanel-analise progress::-moz-progress-bar{background:var(--accent);border-radius:8px}
+#analysis-previous{margin-top:16px}
+.analysis-comparison-message{font-weight:600}
+@media(max-width:700px){
+  .finance-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+  .finance-tabs .fbtn{padding:10px 4px;font-size:11px;line-height:1.4;min-height:44px}
+  .analysis-overview{grid-template-columns:minmax(0,1fr);gap:0}
+  .analysis-period{width:100%}
+  .analysis-period select{width:100%;min-height:48px;font-size:16px}
+  .analysis-category strong{max-width:55%;overflow-wrap:anywhere;flex-shrink:1}
+  .analysis-category small{display:block}
+  .analysis-total>strong{font-size:29px}
+}

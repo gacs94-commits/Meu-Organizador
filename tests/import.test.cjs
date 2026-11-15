@@ -8,7 +8,7 @@ function setup() {
     localStorage: {setItem(){}},
     D: { fin: [] }, uid: (() => { let n=0; return () => ++n; })(),
     $: id => { if(!elements.has(id)) elements.set(id,{value:'Nubank PF — cartão',style:{},classList:{remove(){}}}); return elements.get(id); },
-    save(){}, renderFinance(){}, renderIncomeWidget(){}, toast(){}, confirm:()=>true,
+    save(){return true;}, renderFinance(){}, renderIncomeWidget(){}, toast(){}, confirm:()=>true,
     esc: x=>x, fp: x=>String(x),
   });
   const source = fs.readFileSync(require('node:path').join(__dirname,'../app.js'),'utf8');

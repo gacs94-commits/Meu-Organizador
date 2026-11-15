@@ -469,8 +469,9 @@
       <button class="btn btn-primary" onclick="openImporter()">📥 Importar / atualizar fatura</button>
     </div>
     <div class="finance-tabs" aria-label="Visualização financeira">
-      <button class="fbtn active" id="ftab-extrato" onclick="finTab('extrato')">Lançamentos</button>
-      <button class="fbtn" id="ftab-historico" onclick="finTab('historico')">Histórico mensal</button>
+      <button class="fbtn active" id="ftab-extrato" aria-controls="fpanel-extrato" aria-pressed="true" onclick="finTab('extrato')">Lançamentos</button>
+      <button class="fbtn" id="ftab-analise" aria-controls="fpanel-analise" aria-pressed="false" onclick="finTab('analise')">Análise do mês</button>
+      <button class="fbtn" id="ftab-historico" aria-controls="fpanel-historico" aria-pressed="false" onclick="finTab('historico')">Histórico mensal</button>
     </div>
 
     <!-- EXTRATO PANEL -->
@@ -523,6 +524,26 @@
       </div>
     </details>
 
+    </div>
+
+    <!-- ANALYSIS PANEL -->
+    <div id="fpanel-analise" style="display:none" aria-labelledby="ftab-analise">
+      <div class="finance-summary-heading">
+        <div><h3>Análise do mês</h3><p>Entenda os gastos que você registrou, sem enviar dados para fora.</p></div>
+        <div class="field analysis-period"><label for="analysis-month">Mês da análise</label><select id="analysis-month" onchange="renderFinanceAnalysis()"></select></div>
+      </div>
+      <div class="analysis-status card">
+        <p id="analysis-completeness" class="analysis-status-label"></p>
+        <label class="analysis-complete-control"><input type="checkbox" id="analysis-complete" onchange="setFinanceMonthComplete(this.checked)"><span>Já registrei todos os lançamentos deste mês</span></label>
+        <p class="analysis-muted">Essa confirmação é sua. Alterar, adicionar ou remover lançamentos retira a confirmação do mês afetado.</p>
+      </div>
+      <div class="analysis-overview">
+        <div class="card analysis-total"><h3>Gastos registrados</h3><strong id="analysis-spent"></strong><p id="analysis-count" class="analysis-muted"></p><p class="analysis-muted">Por data do lançamento, não pelo vencimento da fatura. Entradas e estornos registrados como entradas não reduzem estes totais.</p></div>
+        <div class="card"><h3>Relação com sua renda</h3><div id="analysis-income"></div></div>
+      </div>
+      <div class="card"><h3>Distribuição por categoria</h3><p id="analysis-category-insight" class="analysis-insight"></p><div id="analysis-categories"></div></div>
+      <div class="card"><h3>Comparação com o mês anterior</h3><div id="analysis-comparison" aria-live="polite"></div></div>
+      <p class="analysis-muted">Análise automática por regras, usando apenas os dados locais. O mês atual pode estar incompleto; o arquivo importado pode não conter compras mais recentes.</p>
     </div>
 
     <!-- HISTÓRICO PANEL -->
@@ -876,6 +897,8 @@
   </div>
 </div>
 
+<script src="data-safety.js"></script>
+<script src="finance-analysis.js"></script>
 <script src="app.js"></script>
 <script src="health.js"></script>
 <script src="mobile.js"></script>
