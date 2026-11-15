@@ -534,14 +534,23 @@ function renderFinHistory() {
   const sorted = [...months].sort(([a],[b])=>b.localeCompare(a));
   const max = Math.max(...sorted.map(([,m])=>m.spent),1);
   const total = sorted.reduce((sum,[,m])=>sum+m.spent,0);
+  const years = new Map();
+  sorted.forEach(entry => {
+    const year = entry[0].slice(0,4);
+    if(!years.has(year)) years.set(year, []);
+    years.get(year).push(entry);
+  });
   el.innerHTML = `<div class="card finance-history">
     <div class="finance-history-heading">
-      <div><h3>Gastos mês a mês</h3><p>Compare seus gastos de um jeito simples.</p></div>
+      <div><h3>Gastos mês a mês</h3><p>Seu histórico organizado por ano.</p></div>
       <div class="finance-history-total"><span>Total nos meses registrados</span><strong>${fp(total)}</strong></div>
     </div>
     <p class="finance-helper">Compras importadas e gastos manuais, agrupados pela data do lançamento. Entradas não são somadas. Os valores refletem os arquivos importados e não o fechamento da fatura.</p>
-    <div class="finance-month-chart" role="list" aria-label="Gastos por mês">
-      ${sorted.map(([key,month])=>{
+    <div class="finance-years">
+      ${[...years].map(([year,entries],index)=>`<details class="finance-year" ${index===0?'open':''}>
+        <summary><span class="finance-year-label">${year}<small>${entries.length} ${entries.length===1?'mês registrado':'meses registrados'}</small></span><span class="finance-year-total"><small>Gastos no ano</small><strong>${fp(entries.reduce((sum,[,month])=>sum+month.spent,0))}</strong></span><span class="finance-year-chevron" aria-hidden="true">⌄</span></summary>
+        <div class="finance-month-chart" role="list" aria-label="Gastos por mês de ${year}">
+      ${entries.map(([key,month])=>{
         const [year,number] = key.split('-');
         const label = `${names[Number(number)-1]} ${year}`;
         return `<div class="finance-month" role="listitem">
@@ -550,8 +559,10 @@ function renderFinHistory() {
           <div class="finance-month-footer"><span>${month.count} gasto${month.count===1?'':'s'} registrado${month.count===1?'':'s'}</span><button type="button" class="finance-month-link" onclick="viewFinanceMonth('${key}')" aria-label="Ver lançamentos de ${label}">Ver lançamentos →</button></div>
         </div>`;
       }).join('')}
+        </div>
+      </details>`).join('')}
     </div>
-    <p class="finance-helper finance-history-note">As barras usam a mesma escala: o mês com maior gasto tem a barra mais longa. Meses sem registros não aparecem.</p>
+    <p class="finance-helper finance-history-note">Abra um ano para consultar seus meses. As barras de todos os anos usam a mesma escala: o mês com maior gasto tem a barra mais longa. Meses sem registros não aparecem.</p>
   </div>`;
 }
 

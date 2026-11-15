@@ -14,6 +14,10 @@ test('monthly history compares expense totals, excludes income, keeps years sepa
  assert.match(html,/<strong>225<\/strong>/);assert.match(html,/max="150" value="150"/);assert.match(html,/max="150" value="75"/);
  assert.doesNotMatch(html,/Private purchase|500/);assert.equal((html.match(/class="finance-month"/g)||[]).length,2);
  assert(html.indexOf('Dezembro 2026')<html.indexOf('Dezembro 2025'));
+ assert.equal((html.match(/class="finance-year"/g)||[]).length,2);
+ assert.equal((html.match(/class="finance-year" open/g)||[]).length,1);
+ assert.match(html,/Gastos no ano<\/small><strong>150<\/strong>/);
+ assert.match(html,/Gastos no ano<\/small><strong>75<\/strong>/);
 });
 test('empty history and income-only month have honest zero states',()=>{
  assert.match(render([]),/primeira importação/);
