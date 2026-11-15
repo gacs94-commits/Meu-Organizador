@@ -6,8 +6,9 @@ function setup() {
   const elements = new Map();
   const context = vm.createContext({
     localStorage: {setItem(){}},
+    FinanceAnalysis:require('../finance-analysis.js'),
     D: { fin: [] }, uid: (() => { let n=0; return () => ++n; })(),
-    $: id => { if(!elements.has(id)) elements.set(id,{value:'Nubank PF — cartão',style:{},classList:{remove(){}}}); return elements.get(id); },
+    $: id => { if(!elements.has(id)) elements.set(id,{value:id==='imp-period-mode'?'card':id==='imp-invoice-month'?'2026-12':'Nubank PF — cartão',style:{},classList:{remove(){}}}); return elements.get(id); },
     save(){return true;}, renderFinance(){}, renderIncomeWidget(){}, toast(){}, confirm:()=>true,
     esc: x=>x, fp: x=>String(x),
   });
@@ -38,4 +39,13 @@ test('legacy and changed purchases require review; other sources remain independ
  assert.equal(run('impRows[0].status'),'review');assert.equal(run('impRows[0].checked'),false);
  run(`D.fin[0].importSource='Outro cartão';refreshImportSource()`);assert.equal(run('impRows[0].status'),'new');
  run(`D.fin[0].importSource=$('imp-source').value;D.fin[0].val=25;refreshImportSource()`);assert.equal(run('impRows[0].status'),'review');
+});
+test('same purchase in distinct invoices is not suppressed; matching legacy card is linked without duplication',()=>{
+ const run=setup();
+ const load=`impRows=parseCSV('date,title,amount\\n2026-11-10,Loja,20.00').map((r,id)=>({...r,id}));refreshImportSource();`;
+ run(load+'confirmImport()');assert.equal(run('D.fin[0].invoiceMonth'),'2026-12');
+ run(`$('imp-invoice-month').value='2027-01';`+load+'confirmImport()');assert.equal(run('D.fin.length'),2);
+ run(`D.fin=[{id:7,date:'2026-11-10',desc:'Loja',val:20,type:'saida',cat:'Lazer',importSource:$('imp-source').value,importKind:'nubank-card'}];$('imp-invoice-month').value='2026-12';`+load);
+ assert.equal(run('impRows[0].status'),'assign');run('confirmImport()');
+ assert.equal(run('D.fin.length'),1);assert.equal(run('D.fin[0].invoiceMonth'),'2026-12');assert.equal(run('D.fin[0].cat'),'Lazer');assert.equal(run('D.fin[0].date'),'2026-11-10');
 });

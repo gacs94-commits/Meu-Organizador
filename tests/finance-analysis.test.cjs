@@ -37,3 +37,22 @@ test('completion settings survive backup validation, and malicious settings are 
  assert.throws(()=>safety.backup({data:{sh:[]},analysis:{completedMonths:[]}}));
  assert.equal('analysis' in safety.backup({data:{fin:[]}}),false);
 });
+test('card purchases use invoice month; account/manual entries retain the transaction month',()=>{
+ const card={id:1,date:'2026-11-10',type:'saida',val:100,importKind:'nubank-card',invoiceMonth:'2026-12'};
+ assert.equal(analysis.period(card),'2026-12');
+ assert.equal(analysis.summarize([card],'2026-11').cents,0);
+ assert.equal(analysis.summarize([card],'2026-12').cents,10000);
+ assert.equal(analysis.period({...card,invoiceMonth:undefined}),'');
+ assert.equal(analysis.summarize([{...card,invoiceMonth:undefined}],'2026-11').cents,0);
+ assert.equal(analysis.period({date:'2026-11-10',importKind:'statement'}),'2026-11');
+ assert.equal(analysis.period({date:'2026-11-10'}),'2026-11');
+ assert.deepEqual(analysis.changedMonths([card],[{...card,invoiceMonth:'2027-01'}]).sort(),['2026-12','2027-01']);
+});
+test('invoice metadata and comparison basis survive backup validation',()=>{
+ const row={id:1,desc:'Exemplo',date:'2026-11-10',val:100,type:'saida',importKind:'card',invoiceMonth:'2026-12'};
+ const backup=safety.backup({data:{fin:[row]},analysis:{periodBasis:'invoice',completedMonths:['2026-12']}});
+ assert.equal(backup.data.fin[0].date,'2026-11-10');
+ assert.equal(backup.data.fin[0].invoiceMonth,'2026-12');
+ assert.equal(backup.analysis.periodBasis,'invoice');
+ assert.throws(()=>safety.backup({data:{fin:[{...row,invoiceMonth:'2026-13'}]}}));
+});

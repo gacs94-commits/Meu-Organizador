@@ -51,8 +51,12 @@ const DataSafety = (() => {
     if(kind === 'fin') {
       Object.assign(result,{desc:text(row.desc),val:number(row.val),type:choice(row.type,['entrada','saida']),cat:text(row.cat),date:date(row.date)});
       if(!result.desc.trim() || !own(row,'val') || !result.type) fail();
+      if(row.invoiceMonth !== undefined) {
+        if(typeof row.invoiceMonth !== 'string' || !/^\d{4}-(0[1-9]|1[0-2])$/.test(row.invoiceMonth)) fail();
+        result.invoiceMonth=row.invoiceMonth;
+      }
       if(row.importSource !== undefined) result.importSource=text(row.importSource);
-      if(row.importKind !== undefined) result.importKind=choice(row.importKind,['statement','nubank-card']);
+      if(row.importKind !== undefined) result.importKind=choice(row.importKind,['statement','nubank-card','card']);
       return result;
     }
     result.name=text(row.name); if(!result.name.trim()) fail();
@@ -82,7 +86,8 @@ const DataSafety = (() => {
   }
   function analysisSettings(value) {
     if(!object(value) || !Array.isArray(value.completedMonths) || value.completedMonths.some(month=>typeof month !== 'string' || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month))) fail();
-    return {completedMonths:[...new Set(value.completedMonths)].sort()};
+    if(value.periodBasis !== undefined && value.periodBasis !== 'invoice') fail();
+    return {...(value.periodBasis ? {periodBasis:value.periodBasis} : {}),completedMonths:[...new Set(value.completedMonths)].sort()};
   }
   function profile(value) {
     if(!object(value)) fail();

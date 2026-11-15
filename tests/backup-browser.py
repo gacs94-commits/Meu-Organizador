@@ -20,6 +20,8 @@ def upload_csv(page):
     page.evaluate('openImporter()')
     page.set_input_files('#imp-file-input',{'name':'fatura.csv','mimeType':'text/csv','buffer':b'date,title,amount\n2026-11-12,Compra exemplo,20.00'})
     page.wait_for_function('impRows.length === 1')
+    page.locator('#imp-invoice-month').fill('2026-12')
+    page.locator('#imp-invoice-month').dispatch_event('change')
 
 with sync_playwright() as pw:
     browser=pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH','/usr/bin/chromium'),headless=True,args=['--no-sandbox'])

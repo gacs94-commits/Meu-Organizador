@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 function render(fin){
  const el={};const code=fs.readFileSync(require('node:path').join(__dirname,'../app.js'),'utf8');
- const ctx=vm.createContext({D:{fin},$:()=>el,fp:n=>String(n),emptyHTML:s=>s});
+ const ctx=vm.createContext({D:{fin},FinanceAnalysis:require('../finance-analysis.js'),$:()=>el,fp:n=>String(n),emptyHTML:s=>s});
  vm.runInContext(code.slice(code.indexOf('function renderFinHistory()'),code.indexOf('function viewFinanceMonth(')),ctx);
  vm.runInContext('renderFinHistory()',ctx);return el.innerHTML;
 }

@@ -1,6 +1,11 @@
 // Deterministic analysis: no external services, model calls or inferred bank balance.
 const FinanceAnalysis = (() => {
   const validMonth = value => typeof value === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
+  function isCard(row) { return Boolean(row.invoiceMonth) || ['card','nubank-card'].includes(row.importKind); }
+  function period(row) {
+    if(validMonth(row.invoiceMonth)) return row.invoiceMonth;
+    return isCard(row) ? '' : (row.date || '').slice(0,7);
+  }
   function localMonth(now = new Date()) {
     return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
   }
@@ -17,7 +22,7 @@ const FinanceAnalysis = (() => {
     const categories=new Map();
     let cents=0, count=0, recordsCount=0;
     for(const row of records) {
-      if(typeof row.date !== 'string' || row.date.slice(0,7) !== month) continue;
+      if(period(row) !== month) continue;
       recordsCount++;
       if(row.type !== 'saida' || !Number.isFinite(row.val) || row.val<=0) continue;
       const amount=Math.round(row.val*100);
@@ -38,7 +43,7 @@ const FinanceAnalysis = (() => {
     const group = rows => {
       const groups=new Map();
       for(const row of rows) {
-        const month=(row.date || '').slice(0,7);
+        const month=period(row);
         if(!validMonth(month)) continue;
         if(!groups.has(month)) groups.set(month,[]);
         groups.get(month).push(JSON.stringify(row));
@@ -48,20 +53,22 @@ const FinanceAnalysis = (() => {
     const old=group(before), next=group(after);
     return [...new Set([...old.keys(),...next.keys()])].filter(month=>old.get(month)!==next.get(month));
   }
-  return {validMonth,localMonth,previousMonth,label,summarize,compare,changedMonths};
+  return {validMonth,isCard,period,localMonth,previousMonth,label,summarize,compare,changedMonths};
 })();
 if(typeof module !== 'undefined' && module.exports) module.exports=FinanceAnalysis;
 
 function readFinanceAnalysisSettings() {
-  try { return DataSafety.analysisSettings(JSON.parse(localStorage.getItem('hub_fin_analysis') || '{"completedMonths":[]}')); }
-  catch(error) { return {completedMonths:[]}; }
+  try {
+    const settings=DataSafety.analysisSettings(JSON.parse(localStorage.getItem('hub_fin_analysis') || '{"completedMonths":[]}'));
+    return settings.periodBasis === 'invoice' ? settings : {periodBasis:'invoice',completedMonths:[]};
+  } catch(error) { return {periodBasis:'invoice',completedMonths:[]}; }
 }
 function persistFinanceRecords(next,before) {
   const settings=readFinanceAnalysisSettings();
   const changed=new Set(FinanceAnalysis.changedMonths(before,next));
   const completedMonths=settings.completedMonths.filter(month=>!changed.has(month));
   if(completedMonths.length !== settings.completedMonths.length) {
-    DataSafety.batch(localStorage,{hub_fin:JSON.stringify(next),hub_fin_analysis:JSON.stringify({completedMonths})});
+    DataSafety.batch(localStorage,{hub_fin:JSON.stringify(next),hub_fin_analysis:JSON.stringify({periodBasis:'invoice',completedMonths})});
   } else DataSafety.write(localStorage,'hub_fin',next);
 }
 function setFinanceMonthComplete(checked) {
@@ -73,7 +80,7 @@ function setFinanceMonthComplete(checked) {
   }
   const completed=new Set(readFinanceAnalysisSettings().completedMonths);
   if(checked) completed.add(month); else completed.delete(month);
-  try { DataSafety.write(localStorage,'hub_fin_analysis',{completedMonths:[...completed].sort()}); }
+  try { DataSafety.write(localStorage,'hub_fin_analysis',{periodBasis:'invoice',completedMonths:[...completed].sort()}); }
   catch(error) { storageError(error); renderFinanceAnalysis(); return; }
   renderFinanceAnalysis();
   toast(checked ? '✅ Mês confirmado como completo.' : 'Mês marcado como parcial.');
@@ -85,7 +92,7 @@ function renderFinanceAnalysisIfVisible() {
 function renderFinanceAnalysis() {
   const settings=readFinanceAnalysisSettings();
   const selector=$('analysis-month');
-  const recorded=D.fin.map(row=>(row.date || '').slice(0,7)).filter(FinanceAnalysis.validMonth);
+  const recorded=D.fin.map(FinanceAnalysis.period).filter(FinanceAnalysis.validMonth);
   const months=[...new Set([FinanceAnalysis.localMonth(),...recorded,...settings.completedMonths,...(FinanceAnalysis.validMonth(selector.value)?[selector.value]:[])])].sort().reverse();
   const previousSelection=selector.value;
   selector.innerHTML=months.map(month=>`<option value="${month}">${FinanceAnalysis.label(month)}</option>`).join('');

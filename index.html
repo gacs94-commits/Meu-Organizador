@@ -477,9 +477,11 @@
       <button class="fbtn" id="ftab-historico" aria-controls="fpanel-historico" aria-pressed="false" onclick="finTab('historico')">Histórico mensal</button>
     </div>
 
+    <div id="fin-invoice-notice" class="card invoice-notice" hidden><p id="fin-invoice-pending-count"></p><button type="button" class="btn btn-secondary btn-sm" onclick="showUnassignedInvoices()">Definir faturas antigas</button></div>
+
     <!-- EXTRATO PANEL -->
     <div id="fpanel-extrato">
-    <div class="finance-summary-heading"><div><h3>Resumo dos lançamentos</h3><p>Período pela data da compra, não pelo vencimento da fatura.</p></div><label class="finance-period">Período      <select id="fin-month" onchange="renderFinance()" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--surface);color:var(--text);cursor:pointer">
+    <div class="finance-summary-heading"><div><h3>Resumo dos lançamentos</h3><p>Cartão pelo mês da fatura; outros gastos pela data do lançamento.</p></div><label class="finance-period">Mês de referência      <select id="fin-month" onchange="renderFinance()" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--surface);color:var(--text);cursor:pointer">
         <option value="">📅 Todos os meses</option>
       </select></label></div>
     <div class="stats-row" id="fin-stats">
@@ -538,10 +540,10 @@
       <div class="analysis-status card">
         <p id="analysis-completeness" class="analysis-status-label"></p>
         <label class="analysis-complete-control"><input type="checkbox" id="analysis-complete" onchange="setFinanceMonthComplete(this.checked)"><span>Já registrei todos os lançamentos deste mês</span></label>
-        <p class="analysis-muted">Essa confirmação é sua. Alterar, adicionar ou remover lançamentos retira a confirmação do mês afetado.</p>
+        <p class="analysis-muted">Confirme após atribuir as compras às faturas corretas. Alterar lançamentos retira a confirmação do mês afetado. As confirmações antigas por data da compra precisam ser refeitas.</p>
       </div>
       <div class="analysis-overview">
-        <div class="card analysis-total"><h3>Gastos registrados</h3><strong id="analysis-spent"></strong><p id="analysis-count" class="analysis-muted"></p><p class="analysis-muted">Por data do lançamento, não pelo vencimento da fatura. Entradas e estornos registrados como entradas não reduzem estes totais.</p></div>
+        <div class="card analysis-total"><h3>Gastos registrados</h3><strong id="analysis-spent"></strong><p id="analysis-count" class="analysis-muted"></p><p class="analysis-muted">Cartão pelo mês da fatura; outros gastos pela data do lançamento. Compras sem fatura definida ficam fora desta análise. Entradas não reduzem estes totais.</p></div>
         <div class="card"><h3>Relação com sua renda</h3><div id="analysis-income"></div></div>
       </div>
       <div class="card"><h3>Distribuição por categoria</h3><p id="analysis-category-insight" class="analysis-insight"></p><div id="analysis-categories"></div></div>
@@ -869,6 +871,9 @@
     <div id="imp-source-section" class="field" style="display:none;margin:12px 0">
       <label for="imp-source">Conta ou cartão deste arquivo</label>
       <input id="imp-source" value="Nubank PF — cartão" placeholder="Ex.: Nubank PF — cartão" oninput="refreshImportSource()"/>
+      <label for="imp-period-mode">Este arquivo é de</label>
+      <select id="imp-period-mode" onchange="changeImportPeriod()"><option value="statement">Extrato de conta</option><option value="card">Fatura de cartão</option></select>
+      <div id="imp-invoice-fields" hidden><label for="imp-invoice-month">Mês da fatura (cobrança)</label><input type="month" id="imp-invoice-month" onchange="refreshImportSource()" required><p class="finance-helper">Ex.: compras de novembro cobradas na fatura de dezembro → selecione dezembro. Se o mês vier preenchido pelo nome do arquivo, confirme no Nubank antes de importar.</p></div>
       <small>Use sempre o mesmo nome para o mesmo cartão. Para outro cartão ou conta, use outro nome. Compras anteriores não são apagadas; categorias existentes são preservadas. Possíveis alterações ficam para revisão e não substituem lançamentos automaticamente.</small>
     </div>
     <div class="pdf-status" id="imp-status"></div>

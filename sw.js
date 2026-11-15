@@ -1,4 +1,4 @@
-const CACHE_NAME = 'meu-organizador-v16-profile-persistence';
+const CACHE_NAME = 'meu-organizador-v17-invoice-period';
 const ASSETS = [
   './',
   './index.html',
