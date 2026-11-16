@@ -43,9 +43,9 @@ test('legacy and changed purchases require review; other sources remain independ
 test('same purchase in distinct invoices is not suppressed; matching legacy card is linked without duplication',()=>{
  const run=setup();
  const load=`impRows=parseCSV('date,title,amount\\n2026-11-10,Loja,20.00').map((r,id)=>({...r,id}));refreshImportSource();`;
- run(load+'confirmImport()');assert.equal(run('D.fin[0].invoiceMonth'),'2026-12');
+ run(load+'confirmImport()');assert.equal(run('D.fin[0].invoiceMonth'),'2027-01');
  run(`$('imp-invoice-month').value='2027-01';`+load+'confirmImport()');assert.equal(run('D.fin.length'),2);
  run(`D.fin=[{id:7,date:'2026-11-10',desc:'Loja',val:20,type:'saida',cat:'Lazer',importSource:$('imp-source').value,importKind:'nubank-card'}];$('imp-invoice-month').value='2026-12';`+load);
  assert.equal(run('impRows[0].status'),'assign');run('confirmImport()');
- assert.equal(run('D.fin.length'),1);assert.equal(run('D.fin[0].invoiceMonth'),'2026-12');assert.equal(run('D.fin[0].cat'),'Lazer');assert.equal(run('D.fin[0].date'),'2026-11-10');
+ assert.equal(run('D.fin.length'),1);assert.equal(run('D.fin[0].invoiceMonth'),'2027-01');assert.equal(run('D.fin[0].cat'),'Lazer');assert.equal(run('D.fin[0].date'),'2026-11-10');
 });

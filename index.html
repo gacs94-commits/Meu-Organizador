@@ -477,13 +477,14 @@
       <button class="fbtn" id="ftab-historico" aria-controls="fpanel-historico" aria-pressed="false" onclick="finTab('historico')">Histórico mensal</button>
     </div>
 
-    <div id="fin-invoice-notice" class="card invoice-notice" hidden><p id="fin-invoice-pending-count"></p><button type="button" class="btn btn-secondary btn-sm" onclick="showUnassignedInvoices()">Definir faturas antigas</button></div>
+    <div id="fin-invoice-notice" class="card invoice-notice" hidden><p id="fin-invoice-pending-count"></p><button type="button" class="btn btn-secondary btn-sm" onclick="showUnassignedInvoices()">Definir ciclos antigos</button></div>
 
     <!-- EXTRATO PANEL -->
     <div id="fpanel-extrato">
-    <div class="finance-summary-heading"><div><h3>Resumo dos lançamentos</h3><p>Cartão pelo mês da fatura; outros gastos pela data do lançamento.</p></div><label class="finance-period">Mês de referência      <select id="fin-month" onchange="renderFinance()" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--surface);color:var(--text);cursor:pointer">
+    <div class="finance-summary-heading"><div><h3>Resumo dos lançamentos</h3><p>Cartão por ciclo de compras: do dia 6 ao dia 5 do mês seguinte. Outros gastos pela data do lançamento.</p></div><label class="finance-period">Mês de referência      <select id="fin-month" onchange="renderFinance()" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--surface);color:var(--text);cursor:pointer">
         <option value="">📅 Todos os meses</option>
       </select></label></div>
+    <p id="fin-cycle-description" class="finance-helper cycle-description"></p>
     <div class="stats-row" id="fin-stats">
       <div class="stat"><div class="stat-lbl">Gastos importados</div><div class="stat-val" id="fin-s1">R$ 0</div></div>
       <div class="stat"><div class="stat-lbl">Parcelas incluídas nos gastos</div><div class="stat-val c-accent" id="fin-s2">R$ 0</div></div>
@@ -537,13 +538,14 @@
         <div><h3>Análise do mês</h3><p>Entenda os gastos que você registrou, sem enviar dados para fora.</p></div>
         <div class="field analysis-period"><label for="analysis-month">Mês da análise</label><select id="analysis-month" onchange="renderFinanceAnalysis()"></select></div>
       </div>
+      <p id="analysis-cycle-description" class="finance-helper cycle-description"></p>
       <div class="analysis-status card">
         <p id="analysis-completeness" class="analysis-status-label"></p>
-        <label class="analysis-complete-control"><input type="checkbox" id="analysis-complete" onchange="setFinanceMonthComplete(this.checked)"><span>Já registrei todos os lançamentos deste mês</span></label>
-        <p class="analysis-muted">Confirme após atribuir as compras às faturas corretas. Alterar lançamentos retira a confirmação do mês afetado. As confirmações antigas por data da compra precisam ser refeitas.</p>
+        <label class="analysis-complete-control"><input type="checkbox" id="analysis-complete" onchange="setFinanceMonthComplete(this.checked)"><span>Já registrei todos os lançamentos deste período</span></label>
+        <p class="analysis-muted">Confirme após atribuir as compras aos ciclos corretos. Alterar lançamentos retira a confirmação do mês afetado. Confirmações feitas antes da organização por ciclo precisam ser refeitas.</p>
       </div>
       <div class="analysis-overview">
-        <div class="card analysis-total"><h3>Gastos registrados</h3><strong id="analysis-spent"></strong><p id="analysis-count" class="analysis-muted"></p><p class="analysis-muted">Cartão pelo mês da fatura; outros gastos pela data do lançamento. Compras sem fatura definida ficam fora desta análise. Entradas não reduzem estes totais.</p></div>
+        <div class="card analysis-total"><h3>Gastos registrados</h3><strong id="analysis-spent"></strong><p id="analysis-count" class="analysis-muted"></p><p class="analysis-muted">Cartão por ciclo de compras: do dia 6 ao dia 5 do mês seguinte. Outros gastos pela data do lançamento. Compras sem fatura definida ficam fora desta análise. Entradas não reduzem estes totais.</p></div>
         <div class="card"><h3>Relação com sua renda</h3><div id="analysis-income"></div></div>
       </div>
       <div class="card"><h3>Distribuição por categoria</h3><p id="analysis-category-insight" class="analysis-insight"></p><div id="analysis-categories"></div></div>
@@ -873,7 +875,7 @@
       <input id="imp-source" value="Nubank PF — cartão" placeholder="Ex.: Nubank PF — cartão" oninput="refreshImportSource()"/>
       <label for="imp-period-mode">Este arquivo é de</label>
       <select id="imp-period-mode" onchange="changeImportPeriod()"><option value="statement">Extrato de conta</option><option value="card">Fatura de cartão</option></select>
-      <div id="imp-invoice-fields" hidden><label for="imp-invoice-month">Mês da fatura (cobrança)</label><input type="month" id="imp-invoice-month" onchange="refreshImportSource()" required><p class="finance-helper">Ex.: compras de novembro cobradas na fatura de dezembro → selecione dezembro. Se o mês vier preenchido pelo nome do arquivo, confirme no Nubank antes de importar.</p></div>
+      <div id="imp-invoice-fields" hidden><label for="imp-invoice-month">Mês em que o ciclo começa</label><input type="month" id="imp-invoice-month" onchange="refreshImportSource()" required><p id="imp-cycle-description" class="finance-helper"></p><p class="finance-helper">Seu cartão fecha dia 5 e vence dia 13. Ex.: ciclo de dezembro = 06/12 a 05/01, vencimento 13/01. O nome do arquivo Nubank usa o mês do vencimento; a sugestão de ciclo considera o mês anterior. Confirme antes de importar. A data original é preservada, inclusive nas parcelas.</p></div>
       <small>Use sempre o mesmo nome para o mesmo cartão. Para outro cartão ou conta, use outro nome. Compras anteriores não são apagadas; categorias existentes são preservadas. Possíveis alterações ficam para revisão e não substituem lançamentos automaticamente.</small>
     </div>
     <div class="pdf-status" id="imp-status"></div>

@@ -1,9 +1,11 @@
 // Deterministic analysis: no external services, model calls or inferred bank balance.
 const FinanceAnalysis = (() => {
   const validMonth = value => typeof value === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
-  function isCard(row) { return Boolean(row.invoiceMonth) || ['card','nubank-card'].includes(row.importKind); }
+  function isCard(row) { return Boolean(row.cycleMonth) || Boolean(row.invoiceMonth) || ['card','nubank-card'].includes(row.importKind); }
   function period(row) {
-    if(validMonth(row.invoiceMonth)) return row.invoiceMonth;
+    if(validMonth(row.cycleMonth)) return row.cycleMonth;
+    // Older records stored the month of payment, which is the month after the cycle starts.
+    if(validMonth(row.invoiceMonth)) return previousMonth(row.invoiceMonth);
     return isCard(row) ? '' : (row.date || '').slice(0,7);
   }
   function localMonth(now = new Date()) {
@@ -13,6 +15,28 @@ const FinanceAnalysis = (() => {
     if(!validMonth(month)) throw new Error('Mês inválido');
     const [year,number]=month.split('-').map(Number);
     return number === 1 ? `${String(year-1).padStart(4,'0')}-12` : `${year}-${String(number-1).padStart(2,'0')}`;
+  }
+  function nextMonth(month) {
+    if(!validMonth(month)) throw new Error('Mês inválido');
+    const [year,number]=month.split('-').map(Number);
+    return number===12 ? `${year+1}-01` : `${year}-${String(number+1).padStart(2,'0')}`;
+  }
+  function cycleForDate(date) {
+    if(typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return '';
+    const month=date.slice(0,7);
+    return validMonth(month) ? Number(date.slice(8))<=5 ? previousMonth(month) : month : '';
+  }
+  function cycleInfo(month) {
+    const next=nextMonth(month);
+    return {start:month+'-06',end:next+'-05',due:next+'-13'};
+  }
+  function cycleCaption(month) {
+    const info=cycleInfo(month), format=date=>date.split('-').reverse().join('/');
+    return `Ciclo de ${label(month)} · ${format(info.start)} a ${format(info.end)} · vence ${format(info.due)}`;
+  }
+  function currentMonth(records,now=new Date()) {
+    const date=`${localMonth(now)}-${String(now.getDate()).padStart(2,'0')}`;
+    return records.some(isCard) ? cycleForDate(date) : localMonth(now);
   }
   function label(month) {
     const names=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -53,22 +77,22 @@ const FinanceAnalysis = (() => {
     const old=group(before), next=group(after);
     return [...new Set([...old.keys(),...next.keys()])].filter(month=>old.get(month)!==next.get(month));
   }
-  return {validMonth,isCard,period,localMonth,previousMonth,label,summarize,compare,changedMonths};
+  return {validMonth,isCard,period,localMonth,previousMonth,nextMonth,cycleForDate,cycleInfo,cycleCaption,currentMonth,label,summarize,compare,changedMonths};
 })();
 if(typeof module !== 'undefined' && module.exports) module.exports=FinanceAnalysis;
 
 function readFinanceAnalysisSettings() {
   try {
     const settings=DataSafety.analysisSettings(JSON.parse(localStorage.getItem('hub_fin_analysis') || '{"completedMonths":[]}'));
-    return settings.periodBasis === 'invoice' ? settings : {periodBasis:'invoice',completedMonths:[]};
-  } catch(error) { return {periodBasis:'invoice',completedMonths:[]}; }
+    return settings.periodBasis === 'cycle-6-5' ? settings : {periodBasis:'cycle-6-5',completedMonths:[]};
+  } catch(error) { return {periodBasis:'cycle-6-5',completedMonths:[]}; }
 }
 function persistFinanceRecords(next,before) {
   const settings=readFinanceAnalysisSettings();
   const changed=new Set(FinanceAnalysis.changedMonths(before,next));
   const completedMonths=settings.completedMonths.filter(month=>!changed.has(month));
   if(completedMonths.length !== settings.completedMonths.length) {
-    DataSafety.batch(localStorage,{hub_fin:JSON.stringify(next),hub_fin_analysis:JSON.stringify({periodBasis:'invoice',completedMonths})});
+    DataSafety.batch(localStorage,{hub_fin:JSON.stringify(next),hub_fin_analysis:JSON.stringify({periodBasis:'cycle-6-5',completedMonths})});
   } else DataSafety.write(localStorage,'hub_fin',next);
 }
 function setFinanceMonthComplete(checked) {
@@ -80,10 +104,10 @@ function setFinanceMonthComplete(checked) {
   }
   const completed=new Set(readFinanceAnalysisSettings().completedMonths);
   if(checked) completed.add(month); else completed.delete(month);
-  try { DataSafety.write(localStorage,'hub_fin_analysis',{periodBasis:'invoice',completedMonths:[...completed].sort()}); }
+  try { DataSafety.write(localStorage,'hub_fin_analysis',{periodBasis:'cycle-6-5',completedMonths:[...completed].sort()}); }
   catch(error) { storageError(error); renderFinanceAnalysis(); return; }
   renderFinanceAnalysis();
-  toast(checked ? '✅ Mês confirmado como completo.' : 'Mês marcado como parcial.');
+  toast(checked ? '✅ Período confirmado como completo.' : 'Período marcado como parcial.');
 }
 function renderFinanceAnalysisIfVisible() {
   const panel=$('fpanel-analise');
@@ -93,15 +117,16 @@ function renderFinanceAnalysis() {
   const settings=readFinanceAnalysisSettings();
   const selector=$('analysis-month');
   const recorded=D.fin.map(FinanceAnalysis.period).filter(FinanceAnalysis.validMonth);
-  const months=[...new Set([FinanceAnalysis.localMonth(),...recorded,...settings.completedMonths,...(FinanceAnalysis.validMonth(selector.value)?[selector.value]:[])])].sort().reverse();
+  const months=[...new Set([FinanceAnalysis.currentMonth(D.fin),...recorded,...settings.completedMonths,...(FinanceAnalysis.validMonth(selector.value)?[selector.value]:[])])].sort().reverse();
   const previousSelection=selector.value;
   selector.innerHTML=months.map(month=>`<option value="${month}">${FinanceAnalysis.label(month)}</option>`).join('');
-  selector.value=months.includes(previousSelection) ? previousSelection : [...new Set(recorded)].sort().pop() || FinanceAnalysis.localMonth();
+  selector.value=months.includes(previousSelection) ? previousSelection : [...new Set(recorded)].sort().pop() || FinanceAnalysis.currentMonth(D.fin);
   const month=selector.value;
+  $('analysis-cycle-description').textContent='Cartão: '+FinanceAnalysis.cycleCaption(month)+'. Gastos fora do cartão continuam no mês do lançamento.';
   const data=FinanceAnalysis.compare(D.fin,month,settings.completedMonths);
   const complete=settings.completedMonths.includes(month);
   $('analysis-complete').checked=complete;
-  $('analysis-completeness').textContent=complete ? 'Mês confirmado como completo por você' : 'Mês parcial — os registros podem estar incompletos';
+  $('analysis-completeness').textContent=complete ? 'Período confirmado como completo por você' : 'Período parcial — os registros podem estar incompletos';
   $('analysis-completeness').classList.toggle('is-complete',complete);
   const sum=data.current;
   const amount=sum.cents/100;

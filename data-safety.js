@@ -55,6 +55,13 @@ const DataSafety = (() => {
         if(typeof row.invoiceMonth !== 'string' || !/^\d{4}-(0[1-9]|1[0-2])$/.test(row.invoiceMonth)) fail();
         result.invoiceMonth=row.invoiceMonth;
       }
+      if(row.cycleMonth !== undefined) {
+        if(typeof row.cycleMonth !== 'string' || !/^\d{4}-(0[1-9]|1[0-2])$/.test(row.cycleMonth)) fail();
+        const [year,month]=row.cycleMonth.split('-').map(Number);
+        const due=month===12 ? `${year+1}-01` : `${year}-${String(month+1).padStart(2,'0')}`;
+        if(row.invoiceMonth !== undefined && row.invoiceMonth !== due) fail();
+        result.cycleMonth=row.cycleMonth;
+      }
       if(row.importSource !== undefined) result.importSource=text(row.importSource);
       if(row.importKind !== undefined) result.importKind=choice(row.importKind,['statement','nubank-card','card']);
       return result;
@@ -86,7 +93,7 @@ const DataSafety = (() => {
   }
   function analysisSettings(value) {
     if(!object(value) || !Array.isArray(value.completedMonths) || value.completedMonths.some(month=>typeof month !== 'string' || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month))) fail();
-    if(value.periodBasis !== undefined && value.periodBasis !== 'invoice') fail();
+    if(value.periodBasis !== undefined && !['invoice','cycle-6-5'].includes(value.periodBasis)) fail();
     return {...(value.periodBasis ? {periodBasis:value.periodBasis} : {}),completedMonths:[...new Set(value.completedMonths)].sort()};
   }
   function profile(value) {

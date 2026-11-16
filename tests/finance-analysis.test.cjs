@@ -37,16 +37,16 @@ test('completion settings survive backup validation, and malicious settings are 
  assert.throws(()=>safety.backup({data:{sh:[]},analysis:{completedMonths:[]}}));
  assert.equal('analysis' in safety.backup({data:{fin:[]}}),false);
 });
-test('card purchases use invoice month; account/manual entries retain the transaction month',()=>{
- const card={id:1,date:'2026-11-10',type:'saida',val:100,importKind:'nubank-card',invoiceMonth:'2026-12'};
+test('card purchases use cycle start month; old payment-month metadata is read compatibly',()=>{
+ const card={id:1,date:'2026-12-10',type:'saida',val:100,importKind:'nubank-card',cycleMonth:'2026-12',invoiceMonth:'2027-01'};
  assert.equal(analysis.period(card),'2026-12');
  assert.equal(analysis.summarize([card],'2026-11').cents,0);
  assert.equal(analysis.summarize([card],'2026-12').cents,10000);
- assert.equal(analysis.period({...card,invoiceMonth:undefined}),'');
- assert.equal(analysis.summarize([{...card,invoiceMonth:undefined}],'2026-11').cents,0);
+ assert.equal(analysis.period({...card,cycleMonth:undefined}),'2026-12');
+ assert.equal(analysis.period({...card,cycleMonth:undefined,invoiceMonth:undefined}),'');
  assert.equal(analysis.period({date:'2026-11-10',importKind:'statement'}),'2026-11');
  assert.equal(analysis.period({date:'2026-11-10'}),'2026-11');
- assert.deepEqual(analysis.changedMonths([card],[{...card,invoiceMonth:'2027-01'}]).sort(),['2026-12','2027-01']);
+ assert.deepEqual(analysis.changedMonths([card],[{...card,cycleMonth:'2027-01',invoiceMonth:'2027-02'}]).sort(),['2026-12','2027-01']);
 });
 test('invoice metadata and comparison basis survive backup validation',()=>{
  const row={id:1,desc:'Exemplo',date:'2026-11-10',val:100,type:'saida',importKind:'card',invoiceMonth:'2026-12'};
@@ -55,4 +55,26 @@ test('invoice metadata and comparison basis survive backup validation',()=>{
  assert.equal(backup.data.fin[0].invoiceMonth,'2026-12');
  assert.equal(backup.analysis.periodBasis,'invoice');
  assert.throws(()=>safety.backup({data:{fin:[{...row,invoiceMonth:'2026-13'}]}}));
+});
+
+test('cycles start on day 6, close on day 5, and are due on day 13 of the next month',()=>{
+ assert.equal(analysis.cycleForDate('2026-12-05'),'2026-11');
+ assert.equal(analysis.cycleForDate('2026-12-06'),'2026-12');
+ assert.equal(analysis.cycleForDate('2027-01-05'),'2026-12');
+ assert.equal(analysis.cycleForDate('2027-01-06'),'2027-01');
+ assert.equal(analysis.cycleForDate('2028-02-29'),'2028-02');
+ assert.deepEqual(analysis.cycleInfo('2026-12'),{start:'2026-12-06',end:'2027-01-05',due:'2027-01-13'});
+ assert.equal(analysis.nextMonth('2026-12'),'2027-01');
+ assert.match(analysis.cycleCaption('2026-12'),/06\/12\/2026 a 05\/01\/2027.*13\/01\/2027/);
+ const backup=safety.backup({data:{fin:[{id:1,desc:'Compra',val:10,type:'saida',date:'2027-01-05',cycleMonth:'2026-12',invoiceMonth:'2027-01'}]},analysis:{periodBasis:'cycle-6-5',completedMonths:['2026-12']}});
+ assert.equal(backup.data.fin[0].cycleMonth,'2026-12');
+ assert.equal(backup.analysis.periodBasis,'cycle-6-5');
+ assert.throws(()=>safety.backup({data:{fin:[{id:1,desc:'Compra',val:10,type:'saida',date:'2027-01-05',cycleMonth:'2026-12',invoiceMonth:'2026-12'}]}}));
+});
+
+test('active card cycle switches on day 6 while account-only records keep calendar months',()=>{
+ const cards=[{importKind:'nubank-card'}];
+ assert.equal(analysis.currentMonth(cards,new Date(2027,0,5,12)),'2026-12');
+ assert.equal(analysis.currentMonth(cards,new Date(2027,0,6,12)),'2027-01');
+ assert.equal(analysis.currentMonth([],new Date(2027,0,5,12)),'2027-01');
 });
