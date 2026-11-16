@@ -484,7 +484,7 @@
     <div class="finance-summary-heading"><div><h3>Resumo dos lançamentos</h3><p>Cartão por ciclo de compras: do dia 6 ao dia 5 do mês seguinte. Outros gastos pela data do lançamento.</p></div><label class="finance-period">Mês de referência      <select id="fin-month" onchange="renderFinance()" style="padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;background:var(--surface);color:var(--text);cursor:pointer">
         <option value="">📅 Todos os meses</option>
       </select></label></div>
-    <p id="fin-cycle-description" class="finance-helper cycle-description"></p>
+    <div class="finance-period-actions"><p id="fin-cycle-description" class="finance-helper cycle-description"></p><button type="button" class="btn btn-danger btn-sm" id="fin-delete-month" onclick="deleteFinanceMonth()" hidden>Excluir lançamentos do período</button></div>
     <div class="stats-row" id="fin-stats">
       <div class="stat"><div class="stat-lbl">Gastos importados</div><div class="stat-val" id="fin-s1">R$ 0</div></div>
       <div class="stat"><div class="stat-lbl">Parcelas incluídas nos gastos</div><div class="stat-val c-accent" id="fin-s2">R$ 0</div></div>

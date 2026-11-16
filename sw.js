@@ -1,4 +1,4 @@
-const CACHE_NAME = 'meu-organizador-v18-card-cycle';
+const CACHE_NAME = 'meu-organizador-v19-delete-period';
 const ASSETS = [
   './',
   './index.html',

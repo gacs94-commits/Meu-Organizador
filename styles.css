@@ -944,3 +944,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
 .cycle-description{margin:0 0 16px;line-height:1.6}
 .cycle-range{font-size:11px;margin:0 0 10px;line-height:1.5}
+
+.finance-period-actions{display:flex;align-items:flex-start;gap:16px;justify-content:space-between;margin-bottom:16px}
+.finance-period-actions p{flex:1;margin-bottom:0}
+#fin-delete-month{color:var(--red);border-color:var(--red-border);flex-shrink:0;white-space:normal}
+#fin-delete-month:disabled{opacity:.5;cursor:default}
+.finance-month-actions{display:flex;gap:16px;align-items:center}
+.finance-month-actions button:first-child{color:var(--red)}
+@media(max-width:700px){.finance-period-actions{flex-direction:column;align-items:stretch}.finance-month-footer{flex-wrap:wrap}.finance-month-actions{flex-wrap:wrap;gap:12px}}
+#fin-delete-month[hidden]{display:none}

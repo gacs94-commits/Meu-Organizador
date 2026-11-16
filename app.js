@@ -595,7 +595,7 @@ function renderFinHistory() {
           <div class="finance-month-label"><span>${label}</span><strong>${fp(month.spent)}</strong></div>
 ${month.hasCard?`<p class="finance-helper cycle-range">${FinanceAnalysis.cycleCaption(key)}</p>`:''}
           <progress max="${max}" value="${month.spent}" aria-label="Gastos em ${label}: ${fp(month.spent)}"></progress>
-          <div class="finance-month-footer"><span>${month.count} gasto${month.count===1?'':'s'} registrado${month.count===1?'':'s'}</span><button type="button" class="finance-month-link" onclick="viewFinanceMonth('${key}')" aria-label="Ver lançamentos de ${label}">Ver lançamentos →</button></div>
+          <div class="finance-month-footer"><span>${month.count} gasto${month.count===1?'':'s'} registrado${month.count===1?'':'s'}</span><div class="finance-month-actions"><button type="button" class="finance-month-link" onclick="deleteFinanceMonth('${key}')" aria-label="Excluir todos os lançamentos de ${label}">Excluir período</button><button type="button" class="finance-month-link" onclick="viewFinanceMonth('${key}')" aria-label="Ver lançamentos de ${label}">Ver lançamentos →</button></div></div>
         </div>`;
       }).join('')}
         </div>
@@ -635,6 +635,20 @@ function delFinance(id) {
   if(!confirm('Remover?')) return;
   D.fin=D.fin.filter(f=>f.id!==id); if(!save('fin')) return; renderFinance(); toast('🗑️ Removido');
 }
+function deleteFinanceMonth(month=$('fin-month').value) {
+  if(!FinanceAnalysis.validMonth(month)) { toast('Escolha um mês de referência específico para excluir.'); return; }
+  if(restoreBlocked || blockedData.has('fin')) { showDataRecoveryNotice(); toast('Recupere os dados financeiros antes de excluir.'); return; }
+  const count=D.fin.filter(row=>FinanceAnalysis.period(row)===month).length;
+  if(!count) { toast('Não há lançamentos neste período para excluir.'); return; }
+  const message=`Excluir todos os ${count} lançamentos de ${FinanceAnalysis.label(month)}?\n\n${FinanceAnalysis.cycleCaption(month)}. Gastos fora do cartão seguem o mês do lançamento.\nInclui entradas e saídas, mesmo que estejam ocultas pela busca ou pelos filtros. Os outros meses serão mantidos.\n\nEsta ação não pode ser desfeita pelo aplicativo.`;
+  if(!confirm(message)) return;
+  D.fin=D.fin.filter(row=>FinanceAnalysis.period(row)!==month);
+  if(!save('fin')) return;
+  $('fin-month').value=month;
+  renderFinance();renderFinHistory();
+  toast(`✅ ${count} lançamento(s) de ${FinanceAnalysis.label(month)} excluído(s).`);
+}
+
 function renderFinance() {
   const MONTHS_PT = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const currentMonth = FinanceAnalysis.currentMonth(D.fin);
@@ -642,10 +656,10 @@ function renderFinance() {
   // Populate month dropdown
   const monthSel = $('fin-month');
   if(monthSel) {
-    const months = [...new Set(D.fin.map(FinanceAnalysis.period).filter(Boolean))].sort().reverse();
+    const prevVal = monthSel.value;
+    const months = [...new Set([...D.fin.map(FinanceAnalysis.period).filter(Boolean),...(FinanceAnalysis.validMonth(prevVal)?[prevVal]:[])])].sort().reverse();
     // Always include current month even if no transactions yet
     if(!months.includes(currentMonth)) months.unshift(currentMonth);
-    const prevVal = monthSel.value;
     monthSel.innerHTML = '<option value="">📅 Todos os meses</option>' + (D.fin.some(f=>FinanceAnalysis.isCard(f) && !FinanceAnalysis.validMonth(FinanceAnalysis.period(f))) ? '<option value="unassigned"'+(prevVal==='unassigned'?' selected':'')+'>Ciclos a definir</option>' : '') +
       months.map(m => {
         const [y,mo] = m.split('-');
@@ -662,6 +676,10 @@ function renderFinance() {
   }
 
   const selMonth = monthSel?.value || '';
+  const deleteButton=$('fin-delete-month');
+  deleteButton.hidden=!FinanceAnalysis.validMonth(selMonth);
+  deleteButton.disabled=!D.fin.some(row=>FinanceAnalysis.period(row)===selMonth);
+  deleteButton.textContent=FinanceAnalysis.validMonth(selMonth)?`Excluir lançamentos de ${FinanceAnalysis.label(selMonth)}`:'Excluir lançamentos do período';
   $('fin-cycle-description').textContent=FinanceAnalysis.validMonth(selMonth) ? FinanceAnalysis.cycleCaption(selMonth)+'. Fora do cartão: mês do lançamento.' : 'Cartão: ciclos do dia 6 ao dia 5 seguinte, com vencimento no dia 13. Fora do cartão: mês do lançamento.';
   const s = $('fin-search').value.toLowerCase();
 
