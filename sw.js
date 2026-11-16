@@ -1,4 +1,4 @@
-const CACHE_NAME = 'meu-organizador-v19-delete-period';
+const CACHE_NAME = 'meu-organizador-v20-invoice-due-month';
 const ASSETS = [
   './',
   './index.html',

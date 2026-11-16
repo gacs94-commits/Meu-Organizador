@@ -7,7 +7,7 @@ from playwright.sync_api import sync_playwright
 BASE=os.environ.get('APP_TEST_URL','http://127.0.0.1:8767')
 ROWS=[{'id':1,'desc':'Compra visível','date':'2026-12-06','val':10,'type':'saida','importKind':'card','cycleMonth':'2026-12','invoiceMonth':'2027-01'},
       {'id':2,'desc':'Crédito oculto','date':'2027-01-05','val':2,'type':'entrada','importKind':'card','cycleMonth':'2026-12','invoiceMonth':'2027-01'},
-      {'id':3,'desc':'Manual oculto','date':'2026-12-31','val':8,'type':'saida'},
+      {'id':3,'desc':'Manual oculto','date':'2027-01-01','val':8,'type':'saida'},
       {'id':4,'desc':'Outro ciclo','date':'2027-01-06','val':20,'type':'saida','importKind':'card','cycleMonth':'2027-01','invoiceMonth':'2027-02'},
       {'id':5,'desc':'Ciclo indefinido','date':'2026-11-10','val':5,'type':'saida','importKind':'nubank-card'}]
 with sync_playwright() as pw:
@@ -21,13 +21,13 @@ with sync_playwright() as pw:
             def accept(dialog): dialog.accept()
             page.on('dialog',accept)
             page.goto(BASE)
-            page.set_input_files('#import-input',{'name':'test.json','mimeType':'application/json','buffer':json.dumps({'data':{'fin':ROWS},'analysis':{'periodBasis':'cycle-6-5','completedMonths':['2026-12','2027-01']}}).encode()})
+            page.set_input_files('#import-input',{'name':'test.json','mimeType':'application/json','buffer':json.dumps({'data':{'fin':ROWS},'analysis':{'periodBasis':'invoice-due-6-5','completedMonths':['2027-01','2027-02']}}).encode()})
             page.wait_for_function("document.querySelector('#import-input').value === ''")
             page.locator('#fin-month').select_option('')
             assert page.locator('#fin-delete-month').is_hidden()
             page.evaluate('deleteFinanceMonth()')
             assert page.evaluate('D.fin.length')==5
-            page.locator('#fin-month').select_option('2026-12')
+            page.locator('#fin-month').select_option('2027-01')
             page.locator('#fin-search').fill('visível')
             assert page.locator('#fin-list .fin-item').count()==1
             # Cancel must preserve every entry, despite a filtered view.
@@ -52,14 +52,14 @@ with sync_playwright() as pw:
             page.evaluate('restoreDeleteStorage()')
             page.locator('#fin-delete-month').click()
             assert page.evaluate('D.fin.map(row=>row.id)')==[4,5]
-            assert page.evaluate('readFinanceAnalysisSettings().completedMonths')==['2027-01']
-            assert page.locator('#fin-month').input_value()=='2026-12'
+            assert page.evaluate('readFinanceAnalysisSettings().completedMonths')==['2027-02']
+            assert page.locator('#fin-month').input_value()=='2027-01'
             assert page.locator('#fin-delete-month').is_disabled()
             page.reload()
             assert page.evaluate('D.fin.map(row=>row.id)')==[4,5]
             # The history button targets its own month, even if the main selector points elsewhere.
             page.locator('#ftab-historico').click()
-            page.get_by_role('button',name='Excluir todos os lançamentos de Janeiro 2027',exact=True).click()
+            page.get_by_role('button',name='Excluir todos os lançamentos de Fevereiro 2027',exact=True).click()
             assert page.evaluate('D.fin.map(row=>row.id)')==[5]
             assert page.evaluate('readFinanceAnalysisSettings().completedMonths')==[]
             assert page.locator('#fin-invoice-notice').is_visible()

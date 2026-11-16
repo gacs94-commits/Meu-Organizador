@@ -3,9 +3,9 @@ const FinanceAnalysis = (() => {
   const validMonth = value => typeof value === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
   function isCard(row) { return Boolean(row.cycleMonth) || Boolean(row.invoiceMonth) || ['card','nubank-card'].includes(row.importKind); }
   function period(row) {
-    if(validMonth(row.cycleMonth)) return row.cycleMonth;
-    // Older records stored the month of payment, which is the month after the cycle starts.
-    if(validMonth(row.invoiceMonth)) return previousMonth(row.invoiceMonth);
+    if(validMonth(row.invoiceMonth)) return row.invoiceMonth;
+    // Compatibility with records that explicitly stored only the cycle's starting month.
+    if(validMonth(row.cycleMonth)) return nextMonth(row.cycleMonth);
     return isCard(row) ? '' : (row.date || '').slice(0,7);
   }
   function localMonth(now = new Date()) {
@@ -21,22 +21,20 @@ const FinanceAnalysis = (() => {
     const [year,number]=month.split('-').map(Number);
     return number===12 ? `${year+1}-01` : `${year}-${String(number+1).padStart(2,'0')}`;
   }
-  function cycleForDate(date) {
+  function invoiceForDate(date) {
     if(typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return '';
     const month=date.slice(0,7);
-    return validMonth(month) ? Number(date.slice(8))<=5 ? previousMonth(month) : month : '';
+    return validMonth(month) ? Number(date.slice(8))<=5 ? month : nextMonth(month) : '';
   }
-  function cycleInfo(month) {
-    const next=nextMonth(month);
-    return {start:month+'-06',end:next+'-05',due:next+'-13'};
+  function invoiceInfo(month) {
+    return {start:previousMonth(month)+'-06',end:month+'-05',due:month+'-13'};
   }
-  function cycleCaption(month) {
-    const info=cycleInfo(month), format=date=>date.split('-').reverse().join('/');
-    return `Ciclo de ${label(month)} · ${format(info.start)} a ${format(info.end)} · vence ${format(info.due)}`;
+  function invoiceCaption(month) {
+    const info=invoiceInfo(month), format=date=>date.split('-').reverse().join('/');
+    return `Fatura de ${label(month)} · ${format(info.start)} a ${format(info.end)} · vence ${format(info.due)}`;
   }
   function currentMonth(records,now=new Date()) {
-    const date=`${localMonth(now)}-${String(now.getDate()).padStart(2,'0')}`;
-    return records.some(isCard) ? cycleForDate(date) : localMonth(now);
+    return localMonth(now);
   }
   function label(month) {
     const names=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
@@ -77,22 +75,22 @@ const FinanceAnalysis = (() => {
     const old=group(before), next=group(after);
     return [...new Set([...old.keys(),...next.keys()])].filter(month=>old.get(month)!==next.get(month));
   }
-  return {validMonth,isCard,period,localMonth,previousMonth,nextMonth,cycleForDate,cycleInfo,cycleCaption,currentMonth,label,summarize,compare,changedMonths};
+  return {validMonth,isCard,period,localMonth,previousMonth,nextMonth,invoiceForDate,invoiceInfo,invoiceCaption,currentMonth,label,summarize,compare,changedMonths};
 })();
 if(typeof module !== 'undefined' && module.exports) module.exports=FinanceAnalysis;
 
 function readFinanceAnalysisSettings() {
   try {
     const settings=DataSafety.analysisSettings(JSON.parse(localStorage.getItem('hub_fin_analysis') || '{"completedMonths":[]}'));
-    return settings.periodBasis === 'cycle-6-5' ? settings : {periodBasis:'cycle-6-5',completedMonths:[]};
-  } catch(error) { return {periodBasis:'cycle-6-5',completedMonths:[]}; }
+    return settings.periodBasis === 'invoice-due-6-5' ? settings : {periodBasis:'invoice-due-6-5',completedMonths:[]};
+  } catch(error) { return {periodBasis:'invoice-due-6-5',completedMonths:[]}; }
 }
 function persistFinanceRecords(next,before) {
   const settings=readFinanceAnalysisSettings();
   const changed=new Set(FinanceAnalysis.changedMonths(before,next));
   const completedMonths=settings.completedMonths.filter(month=>!changed.has(month));
   if(completedMonths.length !== settings.completedMonths.length) {
-    DataSafety.batch(localStorage,{hub_fin:JSON.stringify(next),hub_fin_analysis:JSON.stringify({periodBasis:'cycle-6-5',completedMonths})});
+    DataSafety.batch(localStorage,{hub_fin:JSON.stringify(next),hub_fin_analysis:JSON.stringify({periodBasis:'invoice-due-6-5',completedMonths})});
   } else DataSafety.write(localStorage,'hub_fin',next);
 }
 function setFinanceMonthComplete(checked) {
@@ -104,7 +102,7 @@ function setFinanceMonthComplete(checked) {
   }
   const completed=new Set(readFinanceAnalysisSettings().completedMonths);
   if(checked) completed.add(month); else completed.delete(month);
-  try { DataSafety.write(localStorage,'hub_fin_analysis',{periodBasis:'cycle-6-5',completedMonths:[...completed].sort()}); }
+  try { DataSafety.write(localStorage,'hub_fin_analysis',{periodBasis:'invoice-due-6-5',completedMonths:[...completed].sort()}); }
   catch(error) { storageError(error); renderFinanceAnalysis(); return; }
   renderFinanceAnalysis();
   toast(checked ? '✅ Período confirmado como completo.' : 'Período marcado como parcial.');
@@ -122,7 +120,7 @@ function renderFinanceAnalysis() {
   selector.innerHTML=months.map(month=>`<option value="${month}">${FinanceAnalysis.label(month)}</option>`).join('');
   selector.value=months.includes(previousSelection) ? previousSelection : [...new Set(recorded)].sort().pop() || FinanceAnalysis.currentMonth(D.fin);
   const month=selector.value;
-  $('analysis-cycle-description').textContent='Cartão: '+FinanceAnalysis.cycleCaption(month)+'. Gastos fora do cartão continuam no mês do lançamento.';
+  $('analysis-cycle-description').textContent='Cartão: '+FinanceAnalysis.invoiceCaption(month)+'. Gastos fora do cartão continuam no mês do lançamento.';
   const data=FinanceAnalysis.compare(D.fin,month,settings.completedMonths);
   const complete=settings.completedMonths.includes(month);
   $('analysis-complete').checked=complete;
