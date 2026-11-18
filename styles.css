@@ -953,3 +953,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .finance-month-actions button:first-child{color:var(--red)}
 @media(max-width:700px){.finance-period-actions{flex-direction:column;align-items:stretch}.finance-month-footer{flex-wrap:wrap}.finance-month-actions{flex-wrap:wrap;gap:12px}}
 #fin-delete-month[hidden]{display:none}
+
+.income-mobile-summary{display:none}
+@media(max-width:700px){
+  .mobile-topbar{height:calc(96px + env(safe-area-inset-top))}
+  .main{padding-top:calc(116px + env(safe-area-inset-top))}
+  .profile-btn{top:calc(26px + env(safe-area-inset-top))}
+  .profile-panel{top:calc(100px + env(safe-area-inset-top));max-height:calc(100dvh - 188px)}
+  .sidebar{padding-top:calc(96px + env(safe-area-inset-top))}
+  #income-mobile-slot .income-widget{height:84px;row-gap:1px}
+  #income-mobile-slot .income-display{height:24px;min-height:24px}
+  #income-mobile-slot .income-amount{font-size:18px;line-height:24px}
+  #income-mobile-slot .income-privacy{grid-row:1 / 4}
+  #income-mobile-slot .income-mobile-summary{display:flex;grid-column:1;grid-row:3;justify-content:space-between;gap:10px;min-width:0}
+  .income-mobile-summary>div{min-width:0}
+  .income-mobile-caption{display:block;font-size:10px;line-height:13px;color:var(--text2)}
+  .income-mobile-summary strong{display:block;font-size:13px;line-height:18px;white-space:nowrap}
+  .income-mobile-spent{text-align:right;flex-shrink:0}
+  .income-hidden .income-mobile-summary strong{letter-spacing:2px}
+  #income-mobile-slot .income-inline-input{height:24px;font-size:16px}
+}
+
+@media(max-width:700px){.income-mobile-summary>div:first-child{flex:1}.income-mobile-summary strong{overflow:hidden;text-overflow:ellipsis}}

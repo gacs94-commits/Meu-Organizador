@@ -1251,6 +1251,10 @@ function editIncome() {
 function renderIncomeWidget() {
   const amtEl   = $('income-amt');
   const barWrap = $('income-bar-wrap');
+  const mobileAvailable=$('income-mobile-avail'), mobilePercent=$('income-mobile-pct');
+  mobileAvailable.textContent=incomeHidden?'••••••':'—';
+  mobilePercent.textContent=incomeHidden?'••%':'—';
+  $('income-mobile-period').textContent='Disponível';
   const privacyLabel = incomeHidden ? 'Mostrar renda mensal' : 'Ocultar renda mensal';
   $('income-privacy').setAttribute('aria-label',privacyLabel);
   $('income-privacy').setAttribute('title',privacyLabel);
@@ -1281,12 +1285,17 @@ function renderIncomeWidget() {
   const monthLbl  = MONTHS_PT[Number(monthStr.slice(5))-1] + (D.fin.some(FinanceAnalysis.isCard)?' (fatura)':'');
   const spent     = D.fin.filter(f=>f.type==='saida'  &&FinanceAnalysis.period(f)===monthStr).reduce((a,f)=>a+f.val,0);
   const earned    = D.fin.filter(f=>f.type==='entrada'&&FinanceAnalysis.period(f)===monthStr).reduce((a,f)=>a+f.val,0);
-  const pct   = Math.min(100, Math.round((spent/income)*100));
+  const pct   = Math.round((spent/income)*100);
   const avail = income - spent;
+  mobileAvailable.textContent=fp(avail);
+  mobileAvailable.style.color=avail<0?'var(--red)':'var(--green)';
+  mobilePercent.textContent=pct+'%';
+  mobilePercent.style.color=pct>90?'var(--red)':pct>70?'var(--amber)':'var(--accent)';
+  $('income-mobile-period').textContent=`Disponível · ${MONTHS_PT[Number(monthStr.slice(5))-1]}`;
 
   barWrap.style.display = 'block';
   const fill = $('income-bar-fill');
-  fill.style.width      = pct+'%';
+  fill.style.width      = Math.min(100,pct)+'%';
   fill.style.background = pct>90?'var(--red)':pct>70?'var(--amber)':'var(--accent)';
 
   $('income-spent-lbl').textContent = `${monthLbl}: ${fp(spent)} gasto`;
