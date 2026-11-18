@@ -2,11 +2,15 @@
 const FinanceAnalysis = (() => {
   const validMonth = value => typeof value === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(value);
   function isCard(row) { return Boolean(row.cycleMonth) || Boolean(row.invoiceMonth) || ['card','nubank-card'].includes(row.importKind); }
-  function period(row) {
+  function invoiceMonth(row) {
     if(validMonth(row.invoiceMonth)) return row.invoiceMonth;
     // Compatibility with records that explicitly stored only the cycle's starting month.
     if(validMonth(row.cycleMonth)) return nextMonth(row.cycleMonth);
-    return isCard(row) ? '' : (row.date || '').slice(0,7);
+    return '';
+  }
+  function period(row) {
+    const due=invoiceMonth(row);
+    return validMonth(due) ? previousMonth(due) : isCard(row) ? '' : (row.date || '').slice(0,7);
   }
   function localMonth(now = new Date()) {
     return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
@@ -75,22 +79,22 @@ const FinanceAnalysis = (() => {
     const old=group(before), next=group(after);
     return [...new Set([...old.keys(),...next.keys()])].filter(month=>old.get(month)!==next.get(month));
   }
-  return {validMonth,isCard,period,localMonth,previousMonth,nextMonth,invoiceForDate,invoiceInfo,invoiceCaption,currentMonth,label,summarize,compare,changedMonths};
+  return {validMonth,isCard,invoiceMonth,period,localMonth,previousMonth,nextMonth,invoiceForDate,invoiceInfo,invoiceCaption,currentMonth,label,summarize,compare,changedMonths};
 })();
 if(typeof module !== 'undefined' && module.exports) module.exports=FinanceAnalysis;
 
 function readFinanceAnalysisSettings() {
   try {
     const settings=DataSafety.analysisSettings(JSON.parse(localStorage.getItem('hub_fin_analysis') || '{"completedMonths":[]}'));
-    return settings.periodBasis === 'invoice-due-6-5' ? settings : {periodBasis:'invoice-due-6-5',completedMonths:[]};
-  } catch(error) { return {periodBasis:'invoice-due-6-5',completedMonths:[]}; }
+    return settings.periodBasis === 'reference-start-6-5' ? settings : {periodBasis:'reference-start-6-5',completedMonths:[]};
+  } catch(error) { return {periodBasis:'reference-start-6-5',completedMonths:[]}; }
 }
 function persistFinanceRecords(next,before) {
   const settings=readFinanceAnalysisSettings();
   const changed=new Set(FinanceAnalysis.changedMonths(before,next));
   const completedMonths=settings.completedMonths.filter(month=>!changed.has(month));
   if(completedMonths.length !== settings.completedMonths.length) {
-    DataSafety.batch(localStorage,{hub_fin:JSON.stringify(next),hub_fin_analysis:JSON.stringify({periodBasis:'invoice-due-6-5',completedMonths})});
+    DataSafety.batch(localStorage,{hub_fin:JSON.stringify(next),hub_fin_analysis:JSON.stringify({periodBasis:'reference-start-6-5',completedMonths})});
   } else DataSafety.write(localStorage,'hub_fin',next);
 }
 function setFinanceMonthComplete(checked) {
@@ -102,7 +106,7 @@ function setFinanceMonthComplete(checked) {
   }
   const completed=new Set(readFinanceAnalysisSettings().completedMonths);
   if(checked) completed.add(month); else completed.delete(month);
-  try { DataSafety.write(localStorage,'hub_fin_analysis',{periodBasis:'invoice-due-6-5',completedMonths:[...completed].sort()}); }
+  try { DataSafety.write(localStorage,'hub_fin_analysis',{periodBasis:'reference-start-6-5',completedMonths:[...completed].sort()}); }
   catch(error) { storageError(error); renderFinanceAnalysis(); return; }
   renderFinanceAnalysis();
   toast(checked ? '✅ Período confirmado como completo.' : 'Período marcado como parcial.');
@@ -120,7 +124,7 @@ function renderFinanceAnalysis() {
   selector.innerHTML=months.map(month=>`<option value="${month}">${FinanceAnalysis.label(month)}</option>`).join('');
   selector.value=months.includes(previousSelection) ? previousSelection : [...new Set(recorded)].sort().pop() || FinanceAnalysis.currentMonth(D.fin);
   const month=selector.value;
-  $('analysis-cycle-description').textContent='Cartão: '+FinanceAnalysis.invoiceCaption(month)+'. Gastos fora do cartão continuam no mês do lançamento.';
+  $('analysis-cycle-description').textContent='Cartão: '+FinanceAnalysis.invoiceCaption(FinanceAnalysis.nextMonth(month))+'. Gastos fora do cartão continuam no mês do lançamento.';
   const data=FinanceAnalysis.compare(D.fin,month,settings.completedMonths);
   const complete=settings.completedMonths.includes(month);
   $('analysis-complete').checked=complete;

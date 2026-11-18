@@ -583,7 +583,7 @@ function renderFinHistory() {
       <div><h3>Gastos mês a mês</h3><p>Seu histórico organizado por ano.</p></div>
       <div class="finance-history-total"><span>Total nos meses registrados</span><strong>${fp(total)}</strong></div>
     </div>
-    <p class="finance-helper">Compras do cartão agrupadas pelo mês de vencimento da fatura (dia 6 do mês anterior ao dia 5 do mês de referência). Gastos fora do cartão usam a data do lançamento. Entradas não são somadas.</p>
+    <p class="finance-helper">Compras do cartão agrupadas pelo mês de referência: do dia 6 desse mês ao dia 5 do seguinte, com fatura no mês seguinte. Gastos fora do cartão usam a data do lançamento. Entradas não são somadas.</p>
     <div class="finance-years">
       ${[...years].map(([year,entries],index)=>`<details class="finance-year" ${index===0?'open':''}>
         <summary><span class="finance-year-label">${year}<small>${entries.length} ${entries.length===1?'mês registrado':'meses registrados'}</small></span><span class="finance-year-total"><small>Gastos no ano</small><strong>${fp(entries.reduce((sum,[,month])=>sum+month.spent,0))}</strong></span><span class="finance-year-chevron" aria-hidden="true">⌄</span></summary>
@@ -640,7 +640,7 @@ function deleteFinanceMonth(month=$('fin-month').value) {
   if(restoreBlocked || blockedData.has('fin')) { showDataRecoveryNotice(); toast('Recupere os dados financeiros antes de excluir.'); return; }
   const count=D.fin.filter(row=>FinanceAnalysis.period(row)===month).length;
   if(!count) { toast('Não há lançamentos neste período para excluir.'); return; }
-  const message=`Excluir todos os ${count} lançamentos de ${FinanceAnalysis.label(month)}?\n\n${FinanceAnalysis.invoiceCaption(month)}. Gastos fora do cartão seguem o mês do lançamento.\nInclui entradas e saídas, mesmo que estejam ocultas pela busca ou pelos filtros. Os outros meses serão mantidos.\n\nEsta ação não pode ser desfeita pelo aplicativo.`;
+  const message=`Excluir todos os ${count} lançamentos de ${FinanceAnalysis.label(month)}?\n\n${FinanceAnalysis.invoiceCaption(FinanceAnalysis.nextMonth(month))}. Gastos fora do cartão seguem o mês do lançamento.\nInclui entradas e saídas, mesmo que estejam ocultas pela busca ou pelos filtros. Os outros meses serão mantidos.\n\nEsta ação não pode ser desfeita pelo aplicativo.`;
   if(!confirm(message)) return;
   D.fin=D.fin.filter(row=>FinanceAnalysis.period(row)!==month);
   if(!save('fin')) return;
@@ -680,7 +680,7 @@ function renderFinance() {
   deleteButton.hidden=!FinanceAnalysis.validMonth(selMonth);
   deleteButton.disabled=!D.fin.some(row=>FinanceAnalysis.period(row)===selMonth);
   deleteButton.textContent=FinanceAnalysis.validMonth(selMonth)?`Excluir lançamentos de ${FinanceAnalysis.label(selMonth)}`:'Excluir lançamentos do período';
-  $('fin-cycle-description').textContent=FinanceAnalysis.validMonth(selMonth) ? FinanceAnalysis.invoiceCaption(selMonth)+'. Fora do cartão: mês do lançamento.' : 'Cartão: ciclos do dia 6 ao dia 5 seguinte, com vencimento no dia 13. Fora do cartão: mês do lançamento.';
+  $('fin-cycle-description').textContent=FinanceAnalysis.validMonth(selMonth) ? FinanceAnalysis.invoiceCaption(FinanceAnalysis.nextMonth(selMonth))+'. Fora do cartão: mês do lançamento.' : 'Cartão: ciclos do dia 6 ao dia 5 seguinte, com vencimento no dia 13. Fora do cartão: mês do lançamento.';
   const s = $('fin-search').value.toLowerCase();
 
   // Apply filters
@@ -777,7 +777,7 @@ function openFinanceInvoice(id) {
   const row=D.fin.find(row=>row.id===id);if(!row) return;
   invoiceEditTarget=id;
   $('modal-title').textContent='Definir fatura do cartão';
-  $('modal-body').innerHTML=`<p class="finance-helper">${esc(row.desc)} · Compra em ${esc(row.date.split('-').reverse().join('/'))}</p><div class="field"><label for="edit-fin-invoice">Mês do vencimento da fatura</label><input type="month" id="edit-fin-invoice" value="${(FinanceAnalysis.isCard(row)?FinanceAnalysis.period(row):FinanceAnalysis.invoiceForDate(row.date)) || ''}" required><p id="edit-fin-cycle-description" class="finance-helper"></p></div><p class="finance-helper">A data original da compra será preservada.</p><div class="form-actions"><button type="button" class="btn btn-primary" onclick="saveFinanceInvoice()">Salvar fatura</button></div>`;
+  $('modal-body').innerHTML=`<p class="finance-helper">${esc(row.desc)} · Compra em ${esc(row.date.split('-').reverse().join('/'))}</p><div class="field"><label for="edit-fin-invoice">Mês do vencimento da fatura</label><input type="month" id="edit-fin-invoice" value="${(FinanceAnalysis.isCard(row)?FinanceAnalysis.invoiceMonth(row):FinanceAnalysis.invoiceForDate(row.date)) || ''}" required><p id="edit-fin-cycle-description" class="finance-helper"></p></div><p class="finance-helper">A data original da compra será preservada.</p><div class="form-actions"><button type="button" class="btn btn-primary" onclick="saveFinanceInvoice()">Salvar fatura</button></div>`;
   const showCycle=()=>{const month=$('edit-fin-invoice').value;$('edit-fin-cycle-description').textContent=FinanceAnalysis.validMonth(month)?FinanceAnalysis.invoiceCaption(month):'Ex.: janeiro de 2026 reúne compras de 06/12/2025 a 05/01/2026 e vence em 13/01/2026.';};
   $('edit-fin-invoice').addEventListener('input',showCycle);showCycle();
   $('modal-edit').classList.add('open');$('edit-fin-invoice').focus();
@@ -789,7 +789,7 @@ function saveFinanceInvoice() {
   row.invoiceMonth=month;row.cycleMonth=FinanceAnalysis.previousMonth(month);
   if(!save('fin')) return;
   closeModal();renderFinance();renderFinHistory();
-  $('fin-month').value=month;renderFinance();toast('✅ Fatura definida. A data da compra foi mantida.');
+  $('fin-month').value=FinanceAnalysis.previousMonth(month);renderFinance();toast('✅ Fatura definida. A data da compra foi mantida.');
 }
 
 function finItemHTML(f) {
@@ -797,7 +797,7 @@ function finItemHTML(f) {
     <div class="fin-dot ${f.type}"></div>
     <div style="flex:1;min-width:0">
       <div class="item-name">${esc(f.desc)}</div>
-      <div class="item-meta">${[f.cat, f.date?new Date(f.date+'T00:00:00').toLocaleDateString('pt-BR'):'', FinanceAnalysis.validMonth(FinanceAnalysis.period(f)) && FinanceAnalysis.isCard(f) ? FinanceAnalysis.invoiceCaption(FinanceAnalysis.period(f)) : FinanceAnalysis.isCard(f) ? 'Fatura a definir' : 'Fora do cartão', f.importSource ? 'Importado · '+f.importSource : 'Manual / sem origem'].filter(Boolean).map(esc).join(' · ')}</div>
+      <div class="item-meta">${[f.cat, f.date?new Date(f.date+'T00:00:00').toLocaleDateString('pt-BR'):'', FinanceAnalysis.validMonth(FinanceAnalysis.period(f)) && FinanceAnalysis.isCard(f) ? FinanceAnalysis.invoiceCaption(FinanceAnalysis.invoiceMonth(f)) : FinanceAnalysis.isCard(f) ? 'Fatura a definir' : 'Fora do cartão', f.importSource ? 'Importado · '+f.importSource : 'Manual / sem origem'].filter(Boolean).map(esc).join(' · ')}</div>
     </div>
     <div class="item-actions">
       <span class="fin-amount ${f.type}">${f.type==='entrada'?'+':'−'}${fp(f.val)}</span>
@@ -2417,14 +2417,14 @@ function reconcileImport() {
     row.matchIndex=-1;
     const key=importKey(row.date,row.desc,row.amount,row.type);
     const exact=(f,i)=>!used.has(i) && f.importSource===source && importKey(f.date,f.desc,f.val,f.type)===key;
-    let index=D.fin.findIndex((f,i)=>exact(f,i) && (month ? FinanceAnalysis.isCard(f) && FinanceAnalysis.period(f)===month : !FinanceAnalysis.isCard(f)));
+    let index=D.fin.findIndex((f,i)=>exact(f,i) && (month ? FinanceAnalysis.isCard(f) && FinanceAnalysis.invoiceMonth(f)===month : !FinanceAnalysis.isCard(f)));
     let status=index>=0?'existing':'new';
     if(index<0 && FinanceAnalysis.validMonth(month)) {
       index=D.fin.findIndex((f,i)=>exact(f,i) && FinanceAnalysis.isCard(f) && !FinanceAnalysis.validMonth(FinanceAnalysis.period(f)));
       if(index>=0) status='assign';
     }
     if(index>=0) { used.add(index);row.matchIndex=index; }
-    if(status==='new' && D.fin.some(f=>((!f.importSource && (!FinanceAnalysis.isCard(f) || !FinanceAnalysis.period(f) || FinanceAnalysis.period(f)===month)) || (f.importSource===source && (month ? !FinanceAnalysis.period(f) || FinanceAnalysis.period(f)===month : !FinanceAnalysis.isCard(f)))) && f.date===row.date && (Math.round(f.val*100)===Math.round(row.amount*100) || f.desc.trim().toLowerCase()===row.desc.trim().toLowerCase()))) status='review';
+    if(status==='new' && D.fin.some(f=>((!f.importSource && (!FinanceAnalysis.isCard(f) || !FinanceAnalysis.period(f) || FinanceAnalysis.invoiceMonth(f)===month)) || (f.importSource===source && (month ? !FinanceAnalysis.isCard(f) || !FinanceAnalysis.invoiceMonth(f) || FinanceAnalysis.invoiceMonth(f)===month : !FinanceAnalysis.isCard(f)))) && f.date===row.date && (Math.round(f.val*100)===Math.round(row.amount*100) || f.desc.trim().toLowerCase()===row.desc.trim().toLowerCase()))) status='review';
     row.status=row.payment?'payment':status;
     row.checked=!['payment','existing','review'].includes(row.status) && row.selected!==false;
   }
@@ -2501,7 +2501,7 @@ function confirmImport() {
   if(!save('fin')) return;
   try { localStorage.setItem('hub_fin_last_import', JSON.stringify({at:new Date().toISOString(),source})); } catch(e) { /* Import status is optional when storage is full. */ }
   renderFinance(); renderIncomeWidget();
-  const latestMonth = invoiceMonth || sel.map(r=>r.date.slice(0,7)).sort().pop();
+  const latestMonth = (invoiceMonth ? FinanceAnalysis.previousMonth(invoiceMonth) : '') || sel.map(r=>r.date.slice(0,7)).sort().pop();
   if($('fin-month') && latestMonth) { $('fin-month').value = latestMonth; renderFinance(); }
   refreshImportSource();
   closeImporter();

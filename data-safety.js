@@ -93,7 +93,7 @@ const DataSafety = (() => {
   }
   function analysisSettings(value) {
     if(!object(value) || !Array.isArray(value.completedMonths) || value.completedMonths.some(month=>typeof month !== 'string' || !/^\d{4}-(0[1-9]|1[0-2])$/.test(month))) fail();
-    if(value.periodBasis !== undefined && !['invoice','cycle-6-5','invoice-due-6-5'].includes(value.periodBasis)) fail();
+    if(value.periodBasis !== undefined && !['invoice','cycle-6-5','invoice-due-6-5','reference-start-6-5'].includes(value.periodBasis)) fail();
     return {...(value.periodBasis ? {periodBasis:value.periodBasis} : {}),completedMonths:[...new Set(value.completedMonths)].sort()};
   }
   function profile(value) {

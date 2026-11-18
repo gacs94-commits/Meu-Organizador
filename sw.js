@@ -1,4 +1,4 @@
-const CACHE_NAME = 'meu-organizador-v21-mobile-budget';
+const CACHE_NAME = 'meu-organizador-v22-reference-month';
 const ASSETS = [
   './',
   './index.html',

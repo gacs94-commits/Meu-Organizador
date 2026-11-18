@@ -1,5 +1,5 @@
 """Run with a local server using python3 tests/mobile-budget-browser.py.
-Checks fixed-header metrics with fictitious data, without changing period semantics.
+Checks fixed-header metrics with fictitious data, using the cycle-start reference month.
 """
 import json
 import os
@@ -7,8 +7,8 @@ from datetime import datetime,timezone
 from pathlib import Path
 from playwright.sync_api import sync_playwright
 BASE=os.environ.get('APP_TEST_URL','http://127.0.0.1:8767')
-ROWS=[{'id':1,'desc':'Compra novembro','val':1250,'date':'2026-10-08','type':'saida','importKind':'card','cycleMonth':'2026-10','invoiceMonth':'2026-11'},
-      {'id':2,'desc':'Compra dezembro','val':999,'date':'2026-11-08','type':'saida','importKind':'card','cycleMonth':'2026-11','invoiceMonth':'2026-12'}]
+ROWS=[{'id':1,'desc':'Compra novembro','val':1250,'date':'2026-11-08','type':'saida','importKind':'card','cycleMonth':'2026-11','invoiceMonth':'2026-12'},
+      {'id':2,'desc':'Compra dezembro','val':999,'date':'2026-12-08','type':'saida','importKind':'card','cycleMonth':'2026-12','invoiceMonth':'2027-01'}]
 with sync_playwright() as pw:
     browser=pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH','/usr/bin/chromium'),headless=True,args=['--no-sandbox'])
     try:
@@ -26,7 +26,18 @@ with sync_playwright() as pw:
             assert '3.750,00' in page.locator('#income-mobile-avail').inner_text()
             assert page.locator('#income-mobile-pct').inner_text()=='25%'
             assert page.locator('#income-pct-lbl').inner_text()=='25%'
+            assert page.evaluate('FinanceAnalysis.period(D.fin[0])')=='2026-11'
+            assert page.evaluate('FinanceAnalysis.invoiceMonth(D.fin[0])')=='2026-12'
+            page.select_option('#fin-month','2026-11')
+            assert 'Fatura de Dezembro 2026' in page.locator('#fin-cycle-description').inner_text()
+            assert '06/11/2026 a 05/12/2026' in page.locator('#fin-cycle-description').inner_text()
             assert page.evaluate('FinanceAnalysis.period(D.fin[1])')=='2026-12'
+            page.evaluate('renderFinanceAnalysis()')
+            page.select_option('#analysis-month','2026-11',force=True)
+            assert 'Fatura de Dezembro 2026' in page.locator('#analysis-cycle-description').inner_text()
+            page.evaluate('openFinanceInvoice(1)')
+            assert page.locator('#edit-fin-invoice').input_value()=='2026-12'
+            page.evaluate('closeModal()')
             if width<701:
                 assert page.locator('header .income-mobile-summary').is_visible()
                 for section in ['finance','health','shopping','books']:
@@ -66,6 +77,6 @@ with sync_playwright() as pw:
                 page.screenshot(path=str(Path(artifacts)/f'mobile-budget-{width}.png'),animations='disabled')
             assert errors==[],errors
             context.close()
-            print(f'PASS {width}px: available income, percentage, period unchanged, persistent privacy, fixed header, menu/profile, overspending, desktop and dark theme')
+            print(f'PASS {width}px: available income, percentage, November reference / December invoice, persistent privacy, fixed header, menu/profile, overspending, desktop and dark theme')
     finally:
         browser.close()

@@ -37,16 +37,16 @@ test('completion settings survive backup validation, and malicious settings are 
  assert.throws(()=>safety.backup({data:{sh:[]},analysis:{completedMonths:[]}}));
  assert.equal('analysis' in safety.backup({data:{fin:[]}}),false);
 });
-test('card purchases use invoice due month and retain older cycle-start metadata compatibly',()=>{
+test('card purchases use cycle-start reference month and preserve invoice due metadata',()=>{
  const card={id:1,date:'2026-12-10',type:'saida',val:100,importKind:'nubank-card',cycleMonth:'2026-12',invoiceMonth:'2027-01'};
- assert.equal(analysis.period(card),'2027-01');
+ assert.equal(analysis.period(card),'2026-12');
  assert.equal(analysis.summarize([card],'2026-11').cents,0);
- assert.equal(analysis.summarize([card],'2027-01').cents,10000);
- assert.equal(analysis.period({...card,cycleMonth:undefined}),'2027-01');
+ assert.equal(analysis.summarize([card],'2026-12').cents,10000);
+ assert.equal(analysis.period({...card,cycleMonth:undefined}),'2026-12');
  assert.equal(analysis.period({...card,cycleMonth:undefined,invoiceMonth:undefined}),'');
  assert.equal(analysis.period({date:'2026-11-10',importKind:'statement'}),'2026-11');
  assert.equal(analysis.period({date:'2026-11-10'}),'2026-11');
- assert.deepEqual(analysis.changedMonths([card],[{...card,cycleMonth:'2027-01',invoiceMonth:'2027-02'}]).sort(),['2027-01','2027-02']);
+ assert.deepEqual(analysis.changedMonths([card],[{...card,cycleMonth:'2027-01',invoiceMonth:'2027-02'}]).sort(),['2026-12','2027-01']);
 });
 test('invoice metadata and comparison basis survive backup validation',()=>{
  const row={id:1,desc:'Exemplo',date:'2026-11-10',val:100,type:'saida',importKind:'card',invoiceMonth:'2026-12'};
@@ -67,9 +67,9 @@ test('January 2026 invoice starts Dec 6, closes Jan 5, and is due Jan 13',()=>{
  assert.deepEqual(analysis.invoiceInfo('2026-01'),{start:'2025-12-06',end:'2026-01-05',due:'2026-01-13'});
  assert.match(analysis.invoiceCaption('2026-01'),/Fatura de Janeiro 2026.*06\/12\/2025 a 05\/01\/2026.*13\/01\/2026/);
  const rows=[{id:1,desc:'Compra dezembro',val:10,type:'saida',date:'2025-12-06',cycleMonth:'2025-12',invoiceMonth:'2026-01'},{id:2,desc:'Compra janeiro',val:20,type:'saida',date:'2026-01-04',invoiceMonth:'2026-01'}];
- assert.equal(analysis.summarize(rows,'2026-01').cents,3000);
- assert.equal(analysis.summarize(rows,'2025-12').cents,0);
- assert.equal(analysis.period({...rows[0],invoiceMonth:undefined}),'2026-01');
+ assert.equal(analysis.summarize(rows,'2026-01').cents,0);
+ assert.equal(analysis.summarize(rows,'2025-12').cents,3000);
+ assert.equal(analysis.period({...rows[0],invoiceMonth:undefined}),'2025-12');
  const backup=safety.backup({data:{fin:rows},analysis:{periodBasis:'invoice-due-6-5',completedMonths:['2026-01']}});
  assert.equal(backup.data.fin[0].date,'2025-12-06');
  assert.equal(backup.data.fin[0].invoiceMonth,'2026-01');
@@ -81,4 +81,16 @@ test('monthly income reference remains the calendar month of payment',()=>{
  assert.equal(analysis.currentMonth(cards,new Date(2026,0,5,12)),'2026-01');
  assert.equal(analysis.currentMonth(cards,new Date(2026,0,6,12)),'2026-01');
  assert.equal(analysis.currentMonth([],new Date(2026,0,5,12)),'2026-01');
+});
+
+test('November reference combines December invoice and November manual spending without shifting stored purchases',()=>{
+ const card={id:1,date:'2026-12-04',invoiceMonth:'2026-12',importKind:'card',type:'saida',val:100};
+ const manual={date:'2026-11-10',type:'saida',val:20};
+ const original=JSON.stringify(card);
+ assert.equal(analysis.period(card),'2026-11');
+ assert.equal(analysis.invoiceMonth(card),'2026-12');
+ assert.equal(analysis.summarize([card,manual],'2026-11').cents,12000);
+ assert.equal(JSON.stringify(card),original);
+ assert.equal(analysis.period({cycleMonth:'2026-11',importKind:'card'}),'2026-11');
+ assert.deepEqual(safety.analysisSettings({periodBasis:'reference-start-6-5',completedMonths:['2026-11']}),{periodBasis:'reference-start-6-5',completedMonths:['2026-11']});
 });
